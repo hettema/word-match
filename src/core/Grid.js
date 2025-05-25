@@ -95,13 +95,20 @@ class Grid {
      */
     calculateGridPosition() {
         const gameWidth = this.scene.scale.width;
-        const gameHeight = this.scene.scale.height;
         
         const totalGridWidth = this.width * this.tileSize + (this.width - 1) * this.gridPadding;
         const totalGridHeight = this.height * this.tileSize + (this.height - 1) * this.gridPadding;
         
+        // Position grid to align with fixed game board position
+        // Calculate board position same as in GameScene
+        const maxDimension = Math.max(totalGridWidth, totalGridHeight);
+        const boardSize = maxDimension + 20; // boardPadding
+        const hudHeight = 85;
+        const spacing = 20;
+        const boardY = hudHeight + spacing + boardSize / 2;
+        
         this.gridStartX = (gameWidth - totalGridWidth) / 2;
-        this.gridStartY = (gameHeight - totalGridHeight) / 2;
+        this.gridStartY = boardY - totalGridHeight / 2;
     }
     
     /**
@@ -370,9 +377,11 @@ class Grid {
                         // Update tile position
                         tile.setGridPosition(x, writeIndex);
                         
-                        // Update visual position immediately
+                        // Update tile's internal position tracking
                         const worldPos = this.gridToWorldPosition(x, writeIndex);
-                        tile.setWorldPosition(worldPos.x, worldPos.y);
+                        tile.worldX = worldPos.x;
+                        tile.worldY = worldPos.y;
+                        // Visual position will be updated by the cascade animation
                         
                         // Record movement for animation
                         movements.push({

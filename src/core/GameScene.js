@@ -56,6 +56,9 @@ class GameScene extends Phaser.Scene {
             // Initialize word validator first (needed by other systems)
             await this.initializeWordValidator();
             
+            // Create game board background BEFORE tiles (for proper layering)
+            this.createGameBoard();
+            
             // Initialize systems
             this.initializeSystems();
             
@@ -315,13 +318,13 @@ class GameScene extends Phaser.Scene {
         // Create HUD container (top area)
         this.createHUD();
         
-        // Create debug info (top-left)
-        this.debugText = this.add.text(10, 10, '', {
-            fontSize: '12px',
-            fontFamily: 'Arial, sans-serif',
-            color: '#2c3e50',
-            backgroundColor: 'rgba(255, 255, 255, 0.8)',
-            padding: { x: 6, y: 3 }
+        // Create debug info (bottom-left)
+        this.debugText = this.add.text(10, this.scale.height - 120, '', {
+            fontSize: '11px',
+            fontFamily: 'Rubik, Arial, sans-serif',
+            color: '#ecf0f1',
+            backgroundColor: 'rgba(44, 62, 80, 0.8)',
+            padding: { x: 8, y: 4 }
         });
         
         // Create status text (bottom-center)
@@ -337,92 +340,185 @@ class GameScene extends Phaser.Scene {
     }
     
     /**
+     * Create game board background with shadow effect
+     */
+    createGameBoard() {
+        const levelConfig = this.registry.get('levelConfig');
+        const gridWidth = levelConfig?.grid?.width || 6;
+        const gridHeight = levelConfig?.grid?.height || 6;
+        const tileSize = this.registry.get('settings')?.display?.tileSize || 64;
+        const gridPadding = this.registry.get('settings')?.display?.gridPadding || 10;
+        
+        // Calculate board dimensions based on grid size
+        const totalGridWidth = gridWidth * tileSize + (gridWidth - 1) * gridPadding;
+        const totalGridHeight = gridHeight * tileSize + (gridHeight - 1) * gridPadding;
+        const boardPadding = 20; // Extra padding around the grid
+        
+        // Make board a perfect square based on the larger dimension
+        const maxDimension = Math.max(totalGridWidth, totalGridHeight);
+        const boardSize = maxDimension + boardPadding;
+        
+        // Fixed position - center horizontally, positioned below HUD with proper spacing
+        const boardX = this.scale.width / 2;
+        const hudHeight = 85; // Actual HUD height
+        const spacing = 20; // Space between HUD and board
+        const boardY = hudHeight + spacing + boardSize / 2; // Position board below HUD
+        
+        // Create shadow (offset background)
+        this.boardShadow = this.add.graphics();
+        this.boardShadow.fillStyle(0x000000, 0.2);
+        this.boardShadow.fillRoundedRect(
+            boardX - boardSize/2 + 4,
+            boardY - boardSize/2 + 4,
+            boardSize,
+            boardSize,
+            12
+        );
+        
+        // Create main board background
+        this.boardBackground = this.add.graphics();
+        this.boardBackground.fillStyle(window.COLORS?.bgPanel || 0x34495e, 0.95);
+        this.boardBackground.lineStyle(3, window.COLORS?.border || 0x2c3e50);
+        this.boardBackground.fillRoundedRect(
+            boardX - boardSize/2,
+            boardY - boardSize/2,
+            boardSize,
+            boardSize,
+            12
+        );
+        this.boardBackground.strokeRoundedRect(
+            boardX - boardSize/2,
+            boardY - boardSize/2,
+            boardSize,
+            boardSize,
+            12
+        );
+    }
+    
+    /**
      * Create the main HUD (Heads-Up Display)
      */
     createHUD() {
         const hudY = 15;
-        const hudHeight = 80;
+        const hudHeight = 70;
         
-        // HUD Background
-        this.hudBackground = this.add.rectangle(
-            this.scale.width / 2,
-            hudY + hudHeight / 2,
+        // HUD Background with rounded corners
+        this.hudBackground = this.add.graphics();
+        this.hudBackground.fillStyle(window.COLORS?.bgPanel || 0x34495e, 0.95);
+        this.hudBackground.lineStyle(2, window.COLORS?.border || 0x2c3e50);
+        this.hudBackground.fillRoundedRect(
+            10,
+            hudY,
             this.scale.width - 20,
             hudHeight,
-            0x2c3e50,
-            0.9
-        ).setStrokeStyle(2, 0x34495e);
+            8
+        );
+        this.hudBackground.strokeRoundedRect(
+            10,
+            hudY,
+            this.scale.width - 20,
+            hudHeight,
+            8
+        );
         
         // Score Section (left)
-        this.scoreLabel = this.add.text(30, hudY + 15, 'SCORE', {
-            fontSize: '14px',
-            fontFamily: 'Arial, sans-serif',
-            color: '#ecf0f1',
+        this.scoreLabel = this.add.text(25, hudY + 12, 'SCORE', {
+            fontSize: '12px',
+            fontFamily: 'Rubik, Arial, sans-serif',
+            color: '#bdc3c7',
             fontStyle: 'bold'
         });
         
-        this.scoreText = this.add.text(30, hudY + 35, '0', {
-            fontSize: '24px',
-            fontFamily: 'Arial, sans-serif',
+        this.scoreText = this.add.text(25, hudY + 28, '0', {
+            fontSize: '20px',
+            fontFamily: 'Rubik, Arial, sans-serif',
             color: '#f39c12',
             fontStyle: 'bold'
         });
         
-        this.targetText = this.add.text(30, hudY + 60, 'Target: 0', {
-            fontSize: '12px',
-            fontFamily: 'Arial, sans-serif',
-            color: '#bdc3c7'
+        this.targetText = this.add.text(25, hudY + 52, 'Target: 0', {
+            fontSize: '10px',
+            fontFamily: 'Rubik, Arial, sans-serif',
+            color: '#95a5a6'
         });
         
-        // Progress Bar
-        const progressBarWidth = 200;
-        const progressBarX = 150;
-        const progressBarY = hudY + 45;
+        // Progress Bar (center)
+        const progressBarWidth = 180;
+        const progressBarX = this.scale.width / 2 - progressBarWidth / 2;
+        const progressBarY = hudY + 35;
         
-        this.progressBarBg = this.add.rectangle(
-            progressBarX + progressBarWidth / 2,
-            progressBarY,
-            progressBarWidth,
-            8,
-            0x34495e
-        );
+        this.progressBarBg = this.add.graphics();
+        this.progressBarBg.fillStyle(0x2c3e50);
+        this.progressBarBg.fillRoundedRect(progressBarX, progressBarY, progressBarWidth, 6, 3);
         
-        this.progressBar = this.add.rectangle(
-            progressBarX,
-            progressBarY,
-            0,
-            8,
-            0x27ae60
-        ).setOrigin(0, 0.5);
+        this.progressBar = this.add.graphics();
+        this.updateProgressBar(0); // Initialize with 0 progress
         
-        // Moves Section (center-right)
-        this.movesLabel = this.add.text(this.scale.width / 2 + 50, hudY + 15, 'MOVES', {
-            fontSize: '14px',
-            fontFamily: 'Arial, sans-serif',
-            color: '#ecf0f1',
+        // Moves Section (right)
+        this.movesLabel = this.add.text(this.scale.width - 120, hudY + 12, 'MOVES', {
+            fontSize: '12px',
+            fontFamily: 'Rubik, Arial, sans-serif',
+            color: '#bdc3c7',
             fontStyle: 'bold'
         });
         
-        this.movesText = this.add.text(this.scale.width / 2 + 50, hudY + 35, '0', {
-            fontSize: '24px',
-            fontFamily: 'Arial, sans-serif',
+        this.movesText = this.add.text(this.scale.width - 120, hudY + 28, '15', {
+            fontSize: '20px',
+            fontFamily: 'Rubik, Arial, sans-serif',
             color: '#3498db',
             fontStyle: 'bold'
         });
         
-        this.movesSubText = this.add.text(this.scale.width / 2 + 50, hudY + 60, 'remaining', {
-            fontSize: '12px',
-            fontFamily: 'Arial, sans-serif',
-            color: '#bdc3c7'
+        this.movesSubtext = this.add.text(this.scale.width - 120, hudY + 52, 'remaining', {
+            fontSize: '10px',
+            fontFamily: 'Rubik, Arial, sans-serif',
+            color: '#95a5a6'
         });
         
-        // Level Section (right)
-        this.levelText = this.add.text(this.scale.width - 40, hudY + 35, 'LEVEL 1', {
-            fontSize: '16px',
-            fontFamily: 'Arial, sans-serif',
+        // Level indicator (top right)
+        this.levelText = this.add.text(this.scale.width - 25, hudY + 35, `LEVEL ${this.currentLevel}`, {
+            fontSize: '14px',
+            fontFamily: 'Rubik, Arial, sans-serif',
             color: '#ecf0f1',
             fontStyle: 'bold'
         }).setOrigin(1, 0.5);
+    }
+    
+    /**
+     * Update progress bar visual
+     * @param {number} progress - Progress value between 0 and 1
+     */
+    updateProgressBar(progress) {
+        if (!this.progressBar) return;
+        
+        const progressBarWidth = 180;
+        const progressBarX = this.scale.width / 2 - progressBarWidth / 2;
+        const progressBarY = 50; // hudY + 35
+        
+        this.progressBar.clear();
+        
+        if (progress > 0) {
+            // Determine color based on progress
+            let color;
+            if (progress >= 1) {
+                color = 0x27ae60; // Green when complete
+            } else if (progress >= 0.7) {
+                color = 0x2ecc71; // Light green when close
+            } else if (progress >= 0.4) {
+                color = 0x3498db; // Blue for medium progress
+            } else {
+                color = 0xe74c3c; // Red for low progress
+            }
+            
+            this.progressBar.fillStyle(color);
+            this.progressBar.fillRoundedRect(
+                progressBarX,
+                progressBarY,
+                progressBarWidth * Math.min(progress, 1),
+                6,
+                3
+            );
+        }
     }
     
     /**
@@ -556,32 +652,45 @@ class GameScene extends Phaser.Scene {
         this.statusText.setText('🎉 LEVEL COMPLETE! 🎉');
         this.statusText.setColor('#27ae60');
         
-        // Show victory overlay
+        // Show victory overlay with proper Z-index
         if (!this.victoryOverlay) {
+            // Dark background overlay
             this.victoryOverlay = this.add.rectangle(
                 this.scale.width / 2,
                 this.scale.height / 2,
                 this.scale.width,
                 this.scale.height,
-                0x27ae60,
+                0x000000,
                 0.8
-            ).setDepth(600);
+            ).setDepth(1000);
             
+            // Victory panel (from style guide)
+            this.victoryPanel = this.add.rectangle(
+                this.scale.width / 2,
+                this.scale.height / 2,
+                400,
+                300,
+                window.COLORS?.success || 0x27ae60
+            ).setStrokeStyle(3, window.COLORS?.textLight || 0xecf0f1).setDepth(1001);
+            
+            // Victory text with better styling
             this.victoryText = this.add.text(
                 this.scale.width / 2,
                 this.scale.height / 2,
-                `🎉 LEVEL ${this.currentLevel} COMPLETE! 🎉\n\nScore: ${this.scoreSystem.getCurrentScore()}\nMoves Used: ${this.maxMoves - this.movesRemaining}`,
+                `🎉 LEVEL ${this.currentLevel} COMPLETE! 🎉\n\nScore: ${this.scoreSystem.getCurrentScore()}\nMoves Used: ${this.maxMoves - this.movesRemaining}\n\nWell done!`,
                 {
-                    fontSize: '28px',
-                    fontFamily: 'Arial, sans-serif',
+                    fontSize: '24px',
+                    fontFamily: 'Rubik, Arial, sans-serif',
                     color: '#ffffff',
                     align: 'center',
-                    fontStyle: 'bold'
+                    fontStyle: 'bold',
+                    lineSpacing: 8
                 }
-            ).setOrigin(0.5, 0.5).setDepth(601);
+            ).setOrigin(0.5, 0.5).setDepth(1002);
         }
         
         this.victoryOverlay.setVisible(true);
+        this.victoryPanel.setVisible(true);
         this.victoryText.setVisible(true);
     }
     
@@ -593,32 +702,45 @@ class GameScene extends Phaser.Scene {
         this.statusText.setText('💀 GAME OVER 💀');
         this.statusText.setColor('#e74c3c');
         
-        // Show defeat overlay
+        // Show defeat overlay with proper Z-index
         if (!this.defeatOverlay) {
+            // Dark background overlay
             this.defeatOverlay = this.add.rectangle(
                 this.scale.width / 2,
                 this.scale.height / 2,
                 this.scale.width,
                 this.scale.height,
-                0xe74c3c,
+                0x000000,
                 0.8
-            ).setDepth(600);
+            ).setDepth(1000);
             
+            // Defeat panel (from style guide)
+            this.defeatPanel = this.add.rectangle(
+                this.scale.width / 2,
+                this.scale.height / 2,
+                400,
+                300,
+                window.COLORS?.danger || 0xe74c3c
+            ).setStrokeStyle(3, window.COLORS?.textLight || 0xecf0f1).setDepth(1001);
+            
+            // Defeat text with better styling
             this.defeatText = this.add.text(
                 this.scale.width / 2,
                 this.scale.height / 2,
                 `💀 GAME OVER 💀\n\nScore: ${this.scoreSystem.getCurrentScore()}\nTarget: ${this.scoreSystem.getTargetScore()}\n\nTry Again!`,
                 {
-                    fontSize: '28px',
-                    fontFamily: 'Arial, sans-serif',
+                    fontSize: '24px',
+                    fontFamily: 'Rubik, Arial, sans-serif',
                     color: '#ffffff',
                     align: 'center',
-                    fontStyle: 'bold'
+                    fontStyle: 'bold',
+                    lineSpacing: 8
                 }
-            ).setOrigin(0.5, 0.5).setDepth(601);
+            ).setOrigin(0.5, 0.5).setDepth(1002);
         }
         
         this.defeatOverlay.setVisible(true);
+        this.defeatPanel.setVisible(true);
         this.defeatText.setVisible(true);
     }
     
@@ -803,19 +925,8 @@ class GameScene extends Phaser.Scene {
         this.scoreText.setText(currentScore.toString());
         this.targetText.setText(`Target: ${targetScore}`);
         
-        // Update progress bar
-        const progressBarWidth = 200;
-        const progressWidth = (progress / 100) * progressBarWidth;
-        this.progressBar.setSize(progressWidth, 8);
-        
-        // Change progress bar color based on progress
-        if (progress >= 100) {
-            this.progressBar.setFillStyle(0x27ae60); // Green when complete
-        } else if (progress >= 75) {
-            this.progressBar.setFillStyle(0xf39c12); // Orange when close
-        } else {
-            this.progressBar.setFillStyle(0x3498db); // Blue for normal progress
-        }
+        // Update progress bar using new method
+        this.updateProgressBar(progress / 100); // Convert percentage to 0-1 range
         
         // Update moves display
         this.movesText.setText(this.movesRemaining.toString());

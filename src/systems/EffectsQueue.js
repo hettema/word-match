@@ -255,7 +255,7 @@ class EffectsQueue {
         
         // Scale and fade out animation
         this.scene.tweens.add({
-            targets: [tile.sprite, tile.textObject].filter(obj => obj),
+            targets: tile.container || [tile.sprite, tile.textObject].filter(obj => obj),
             scale: 0,
             alpha: 0,
             duration: duration * 0.6,
@@ -577,13 +577,16 @@ class EffectsQueue {
                 
                 // Animate tile falling
                 this.scene.tweens.add({
-                    targets: [tile.sprite, tile.textObject].filter(obj => obj),
+                    targets: tile.container || [tile.sprite, tile.textObject].filter(obj => obj),
                     y: toPos.y,
                     duration: duration,
                     ease: 'Bounce.easeOut',
                     onComplete: () => {
                         tile.setState(TILE_STATES.NORMAL);
-                        tile.setWorldPosition(toPos.x, toPos.y);
+                        // Position is already set by the tween animation
+                        // Update tile's internal position tracking
+                        tile.worldX = toPos.x;
+                        tile.worldY = toPos.y;
                         resolve();
                     }
                 });
@@ -606,17 +609,23 @@ class EffectsQueue {
         for (let i = 0; i < targets.length; i++) {
             const tile = targets[i];
             if (tile && tile.sprite) {
-                // Start invisible and small
-                tile.sprite.setScale(0);
-                tile.sprite.setAlpha(0);
-                if (tile.textObject) {
-                    tile.textObject.setScale(0);
-                    tile.textObject.setAlpha(0);
+                // Start invisible and small - use container for unified control
+                if (tile.container) {
+                    tile.container.setScale(0);
+                    tile.container.setAlpha(0);
+                } else {
+                    // Fallback for tiles without containers
+                    tile.sprite.setScale(0);
+                    tile.sprite.setAlpha(0);
+                    if (tile.textObject) {
+                        tile.textObject.setScale(0);
+                        tile.textObject.setAlpha(0);
+                    }
                 }
                 
                 // Animate appearance
                 this.scene.tweens.add({
-                    targets: [tile.sprite, tile.textObject].filter(obj => obj),
+                    targets: tile.container || [tile.sprite, tile.textObject].filter(obj => obj),
                     scale: 1,
                     alpha: 1,
                     duration: duration,
