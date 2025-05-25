@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Validator Test - Word Match</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        .test-section h3 {
+            margin-top: 0;
+            color: #34495e;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        
+        .status.loading {
+            background-color: #f39c12;
+            color: white;
+        }
+        
+        .status.success {
+            background-color: #27ae60;
+            color: white;
+        }
+        
+        .status.error {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .word-test {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        
+        .word-test input {
+            flex: 1;
+            padding: 8px;
+            margin-right: 10px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        
+        .word-test button {
+            padding: 8px 15px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        
+        .word-test button:hover {
+            background-color: #2980b9;
+        }
+        
+        .result {
+            margin-left: 10px;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        
+        .result.valid {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .result.invalid {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .stats {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        
+        .stats h4 {
+            margin-top: 0;
+        }
+        
+        .performance-test {
+            margin: 20px 0;
+        }
+        
+        .performance-results {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-line;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔤 Word Validator Test</h1>
+        
+        <div class="test-section">
+            <h3>📚 Dictionary Loading</h3>
+            <div id="loadingStatus" class="status loading">Loading dictionary...</div>
+            <div id="dictStats" class="stats" style="display: none;">
+                <h4>Dictionary Statistics:</h4>
+                <div id="statsContent"></div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>✅ Word Validation Test</h3>
+            <div class="word-test">
+                <input type="text" id="wordInput" placeholder="Enter a word to test..." />
+                <button onclick="testWord()">Test Word</button>
+                <div id="wordResult" class="result" style="display: none;"></div>
+            </div>
+            
+            <h4>Quick Tests:</h4>
+            <div id="quickTests"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>⚡ Performance Test</h3>
+            <div class="performance-test">
+                <button onclick="runPerformanceTest()">Run Performance Test (1000 lookups)</button>
+                <div id="performanceResults" class="performance-results" style="display: none;"></div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🔍 Prefix Search Test</h3>
+            <div class="word-test">
+                <input type="text" id="prefixInput" placeholder="Enter prefix (e.g., 'CAT')..." />
+                <button onclick="testPrefix()">Find Words</button>
+            </div>
+            <div id="prefixResults" style="margin-top: 10px;"></div>
+        </div>
+    </div>
+
+    <!-- Include WordValidator -->
+    <script src="src/systems/WordValidator.js"></script>
+    
+    <script>
+        let wordValidator;
+        
+        // Test words - mix of valid and invalid
+        const testWords = [
+            { word: 'THE', expected: true },
+            { word: 'HELLO', expected: true },
+            { word: 'WORLD', expected: true },
+            { word: 'JAVASCRIPT', expected: true },
+            { word: 'PHASER', expected: true },
+            { word: 'XYZZYX', expected: false },
+            { word: 'QWERTY', expected: false },
+            { word: 'ASDFGH', expected: false },
+            { word: 'CAT', expected: true },
+            { word: 'DOG', expected: true },
+            { word: 'GAME', expected: true },
+            { word: 'WORD', expected: true }
+        ];
+        
+        async function initializeTest() {
+            try {
+                wordValidator = new WordValidator();
+                
+                const success = await wordValidator.load();
+                
+                if (success) {
+                    const stats = wordValidator.getStats();
+                    
+                    document.getElementById('loadingStatus').className = 'status success';
+                    document.getElementById('loadingStatus').textContent = 'Dictionary loaded successfully!';
+                    
+                    document.getElementById('dictStats').style.display = 'block';
+                    document.getElementById('statsContent').innerHTML = `
+                        <strong>Words loaded:</strong> ${stats.wordCount.toLocaleString()}<br>
+                        <strong>Load time:</strong> ${stats.loadTime?.toFixed(2)}ms<br>
+                        <strong>Status:</strong> ${stats.loaded ? 'Ready' : 'Not ready'}
+                    `;
+                    
+                    // Run quick tests
+                    runQuickTests();
+                    
+                } else {
+                    throw new Error('Failed to load dictionary');
+                }
+                
+            } catch (error) {
+                document.getElementById('loadingStatus').className = 'status error';
+                document.getElementById('loadingStatus').textContent = `Error: ${error.message}`;
+                console.error('Test initialization failed:', error);
+            }
+        }
+        
+        function runQuickTests() {
+            const quickTestsDiv = document.getElementById('quickTests');
+            quickTestsDiv.innerHTML = '';
+            
+            testWords.forEach(({ word, expected }) => {
+                const isValid = wordValidator.isValid(word);
+                const passed = isValid === expected;
+                
+                const testDiv = document.createElement('div');
+                testDiv.className = 'word-test';
+                testDiv.innerHTML = `
+                    <span style="flex: 1;">"${word}"</span>
+                    <span class="result ${isValid ? 'valid' : 'invalid'}">${isValid ? 'Valid' : 'Invalid'}</span>
+                    <span style="margin-left: 10px; color: ${passed ? '#27ae60' : '#e74c3c'};">
+                        ${passed ? '✓' : '✗'} ${passed ? 'PASS' : 'FAIL'}
+                    </span>
+                `;
+                quickTestsDiv.appendChild(testDiv);
+            });
+        }
+        
+        function testWord() {
+            const input = document.getElementById('wordInput');
+            const result = document.getElementById('wordResult');
+            const word = input.value.trim();
+            
+            if (!word) {
+                result.style.display = 'none';
+                return;
+            }
+            
+            if (!wordValidator || !wordValidator.isReady()) {
+                result.className = 'result invalid';
+                result.textContent = 'Dictionary not ready';
+                result.style.display = 'block';
+                return;
+            }
+            
+            const startTime = performance.now();
+            const isValid = wordValidator.isValid(word);
+            const lookupTime = performance.now() - startTime;
+            
+            result.className = `result ${isValid ? 'valid' : 'invalid'}`;
+            result.textContent = `${isValid ? 'Valid' : 'Invalid'} (${lookupTime.toFixed(2)}ms)`;
+            result.style.display = 'block';
+        }
+        
+        function runPerformanceTest() {
+            if (!wordValidator || !wordValidator.isReady()) {
+                alert('Dictionary not ready');
+                return;
+            }
+            
+            const resultsDiv = document.getElementById('performanceResults');
+            resultsDiv.style.display = 'block';
+            resultsDiv.textContent = 'Running performance test...';
+            
+            // Use a mix of test words for realistic performance testing
+            const testSet = [];
+            for (let i = 0; i < 1000; i++) {
+                testSet.push(testWords[i % testWords.length].word);
+            }
+            
+            setTimeout(() => {
+                const startTime = performance.now();
+                
+                let validCount = 0;
+                for (const word of testSet) {
+                    if (wordValidator.isValid(word)) {
+                        validCount++;
+                    }
+                }
+                
+                const endTime = performance.now();
+                const totalTime = endTime - startTime;
+                const avgTime = totalTime / testSet.length;
+                
+                resultsDiv.textContent = `Performance Test Results:
+Total lookups: ${testSet.length}
+Total time: ${totalTime.toFixed(2)}ms
+Average per lookup: ${avgTime.toFixed(4)}ms
+Valid words found: ${validCount}
+Lookups per second: ${(1000 / avgTime).toFixed(0)}
+
+${avgTime < 0.1 ? '✅ EXCELLENT' : avgTime < 1 ? '✅ GOOD' : '⚠️ SLOW'} - Target: <0.1ms per lookup`;
+            }, 100);
+        }
+        
+        function testPrefix() {
+            const input = document.getElementById('prefixInput');
+            const results = document.getElementById('prefixResults');
+            const prefix = input.value.trim();
+            
+            if (!prefix) {
+                results.innerHTML = '';
+                return;
+            }
+            
+            if (!wordValidator || !wordValidator.isReady()) {
+                results.innerHTML = '<div class="result invalid">Dictionary not ready</div>';
+                return;
+            }
+            
+            const startTime = performance.now();
+            const matches = wordValidator.getWordsWithPrefix(prefix);
+            const searchTime = performance.now() - startTime;
+            
+            if (matches.length === 0) {
+                results.innerHTML = `<div class="result invalid">No words found starting with "${prefix}" (${searchTime.toFixed(2)}ms)</div>`;
+            } else {
+                const displayMatches = matches.slice(0, 20); // Show first 20
+                const moreCount = matches.length - displayMatches.length;
+                
+                results.innerHTML = `
+                    <div class="result valid">Found ${matches.length} words in ${searchTime.toFixed(2)}ms</div>
+                    <div style="margin-top: 10px; font-family: monospace; background: #f8f9fa; padding: 10px; border-radius: 5px;">
+                        ${displayMatches.join(', ')}
+                        ${moreCount > 0 ? `<br><em>... and ${moreCount} more</em>` : ''}
+                    </div>
+                `;
+            }
+        }
+        
+        // Handle Enter key in inputs
+        document.getElementById('wordInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') testWord();
+        });
+        
+        document.getElementById('prefixInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') testPrefix();
+        });
+        
+        // Initialize test when page loads
+        window.addEventListener('load', initializeTest);
+    </script>
+</body>
+</html>

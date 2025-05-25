@@ -11,6 +11,7 @@ class GameScene extends Phaser.Scene {
         this.grid = null;
         this.effectsQueue = null;
         this.inputSystem = null;
+        this.wordValidator = null;
         
         // Game state
         this.gameState = 'playing'; // 'playing', 'animating', 'paused'
@@ -49,6 +50,9 @@ class GameScene extends Phaser.Scene {
             // Load configuration first
             await this.loadConfiguration();
             
+            // Initialize word validator first (needed by other systems)
+            await this.initializeWordValidator();
+            
             // Initialize systems
             this.initializeSystems();
             
@@ -65,7 +69,7 @@ class GameScene extends Phaser.Scene {
             
         } catch (error) {
             console.error('Error creating GameScene:', error);
-            this.showError('Failed to initialize game');
+            this.showError(`Failed to initialize game: ${error.message}`);
         }
     }
     
@@ -86,6 +90,33 @@ class GameScene extends Phaser.Scene {
             
         } catch (error) {
             console.error('Failed to load configuration:', error);
+            throw error;
+        }
+    }
+    
+    /**
+     * Initialize all game systems
+     */
+    /**
+     * Initialize word validator system
+     */
+    async initializeWordValidator() {
+        try {
+            console.log('Initializing WordValidator...');
+            this.wordValidator = new WordValidator();
+            
+            const loadSuccess = await this.wordValidator.load();
+            if (!loadSuccess) {
+                throw new Error('Failed to load dictionary');
+            }
+            
+            this.registry.set('wordValidator', this.wordValidator);
+            
+            const stats = this.wordValidator.getStats();
+            console.log(`WordValidator initialized: ${stats.wordCount} words loaded in ${stats.loadTime?.toFixed(2)}ms`);
+            
+        } catch (error) {
+            console.error('Failed to initialize WordValidator:', error);
             throw error;
         }
     }
@@ -189,6 +220,42 @@ class GameScene extends Phaser.Scene {
     }
     
     /**
+     * Show error message to user
+     * @param {string} message - Error message to display
+     */
+    showError(message) {
+        // Create error overlay if it doesn't exist
+        if (!this.errorOverlay) {
+            this.errorOverlay = this.add.rectangle(
+                this.scale.width / 2,
+                this.scale.height / 2,
+                this.scale.width,
+                this.scale.height,
+                0x000000,
+                0.8
+            );
+            this.errorOverlay.setDepth(1000);
+            
+            this.errorText = this.add.text(
+                this.scale.width / 2,
+                this.scale.height / 2,
+                '',
+                {
+                    fontSize: '24px',
+                    fontFamily: 'Arial, sans-serif',
+                    color: '#ffffff',
+                    align: 'center',
+                    wordWrap: { width: this.scale.width - 40 }
+                }
+            ).setOrigin(0.5, 0.5).setDepth(1001);
+        }
+        
+        this.errorText.setText(message);
+        this.errorOverlay.setVisible(true);
+        this.errorText.setVisible(true);
+    }
+    
+    /**
      * Start the game
      */
     startGame() {
@@ -206,7 +273,10 @@ class GameScene extends Phaser.Scene {
      * @param {Object} wordData - Word submission data
      */
     handleWordSubmission(wordData) {
-        const { word, tiles, isValid } = wordData;
+        const { word, tiles } = wordData;
+        
+        // Validate word using WordValidator
+        const isValid = this.wordValidator && this.wordValidator.isValid(word);
         
         console.log(`Word submitted: "${word}" (${isValid ? 'valid' : 'invalid'})`);
         
@@ -388,13 +458,15 @@ class GameScene extends Phaser.Scene {
         // Update debug info
         const effectsStatus = this.effectsQueue ? this.effectsQueue.getStatus() : {};
         const gridStats = this.grid ? this.grid.getStats() : {};
+        const validatorStats = this.wordValidator ? this.wordValidator.getStats() : {};
         
         this.debugText.setText([
             `FPS: ${this.currentFPS}`,
             `State: ${this.gameState}`,
             `Queue: ${effectsStatus.queueLength || 0}`,
             `Processing: ${effectsStatus.isProcessing ? 'Yes' : 'No'}`,
-            `Tiles: ${gridStats.totalTiles || 0}`
+            `Tiles: ${gridStats.totalTiles || 0}`,
+            `Dict: ${validatorStats.loaded ? validatorStats.wordCount + ' words' : 'Loading...'}`
         ].join('\n'));
         
         // Update game info
