@@ -89,12 +89,47 @@ class Tile {
         );
         this.sprite.setStrokeStyle(2, 0x34495e);
         
-        // Create letter text
+        // Create letter text with emoji indicators for special tiles
         if (this.isRevealed) {
+            let displayText = this.letter;
+            
+            // Add emoji indicators for special tiles
+            switch (this.type) {
+                case TILE_TYPES.BOMB:
+                    displayText = `💣\n${this.letter}`;
+                    break;
+                case TILE_TYPES.ICE:
+                    displayText = `🧊\n${this.letter}`;
+                    break;
+                case TILE_TYPES.STONE:
+                    displayText = `🪨\n${this.letter}`;
+                    break;
+                case TILE_TYPES.MULTIPLIER:
+                    displayText = `⭐\n${this.letter}`;
+                    break;
+                default:
+                    displayText = this.letter;
+            }
+            
             this.textObject = this.scene.add.text(
                 0,
                 0,
-                this.letter,
+                displayText,
+                {
+                    fontSize: `${Math.floor(tileSize * 0.25)}px`,
+                    fontFamily: 'Arial, sans-serif',
+                    color: '#2c3e50',
+                    fontStyle: 'bold',
+                    align: 'center'
+                }
+            );
+            this.textObject.setOrigin(0.5, 0.5);
+        } else if (this.type === TILE_TYPES.HIDDEN) {
+            // Show ? for hidden tiles
+            this.textObject = this.scene.add.text(
+                0,
+                0,
+                '?',
                 {
                     fontSize: `${Math.floor(tileSize * 0.4)}px`,
                     fontFamily: 'Arial, sans-serif',
@@ -314,13 +349,16 @@ class Tile {
         if (this.type === TILE_TYPES.HIDDEN && !this.isRevealed) {
             this.isRevealed = true;
             
-            // Create letter text if it doesn't exist
-            if (!this.textObject) {
+            // Update the text to show the letter instead of ?
+            if (this.textObject) {
+                this.textObject.setText(this.letter);
+            } else {
+                // Create letter text if it doesn't exist
                 const tileSize = this.scene.registry.get('settings')?.display?.tileSize || 64;
                 this.textObject = this.scene.add.text(
-                    this.worldX, 
-                    this.worldY, 
-                    this.letter, 
+                    this.worldX,
+                    this.worldY,
+                    this.letter,
                     {
                         fontSize: `${Math.floor(tileSize * 0.4)}px`,
                         fontFamily: 'Arial, sans-serif',
@@ -359,8 +397,13 @@ class Tile {
      * @returns {boolean} True if tile can be selected
      */
     canBeSelected() {
-        return this.isRevealed && 
-               this.state !== TILE_STATES.EXPLODING && 
+        // Ice and stone tiles are blockers and cannot be selected
+        if (this.type === TILE_TYPES.ICE || this.type === TILE_TYPES.STONE) {
+            return false;
+        }
+        
+        return this.isRevealed &&
+               this.state !== TILE_STATES.EXPLODING &&
                this.state !== TILE_STATES.FALLING;
     }
     

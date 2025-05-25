@@ -155,6 +155,7 @@ class Grid {
     generateRandomTile() {
         // Check for special tile generation
         const specialType = this.rollForSpecialTile();
+        
         if (specialType !== TILE_TYPES.NORMAL) {
             // Special tiles still need letters for hidden tiles
             const baseTile = this.getRandomBaseTile();
@@ -197,7 +198,7 @@ class Grid {
         for (const [type, probability] of Object.entries(specialTiles)) {
             cumulativeProbability += probability;
             if (roll < cumulativeProbability) {
-                return type.toUpperCase(); // Convert to TILE_TYPES format
+                return type.toLowerCase();
             }
         }
         
@@ -368,6 +369,10 @@ class Grid {
                         
                         // Update tile position
                         tile.setGridPosition(x, writeIndex);
+                        
+                        // Update visual position immediately
+                        const worldPos = this.gridToWorldPosition(x, writeIndex);
+                        tile.setWorldPosition(worldPos.x, worldPos.y);
                         
                         // Record movement for animation
                         movements.push({

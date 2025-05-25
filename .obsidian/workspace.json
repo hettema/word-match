@@ -84,7 +84,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 300,
+    "collapsed": true
   },
   "right": {
     "id": "f49c43449cf90d5f",
@@ -177,6 +178,8 @@
   },
   "active": "dba328133ee3b571",
   "lastOpenFiles": [
+    "test-special-tiles-playable.html",
+    "test-special-tiles.html",
     "test-ripple-effects.html",
     "test-scoring-playable.html",
     "test-scoring-simple.html",
@@ -186,8 +189,6 @@
     "test-word-validator.html",
     "src/systems/WordValidator.js",
     "debug-bottom-row.js",
-    "test-effects.html",
-    "src/core/GameScene.js",
     "kanban.md"
   ]
 }

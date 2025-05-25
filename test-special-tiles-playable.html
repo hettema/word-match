@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Special Tiles Playable Test - Word Match</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background-color: #2c3e50;
+            color: white;
+        }
+        
+        #game-container {
+            display: flex;
+            gap: 20px;
+        }
+        
+        #game-canvas {
+            border: 2px solid #34495e;
+            background-color: #34495e;
+        }
+        
+        #controls {
+            min-width: 300px;
+            background-color: #34495e;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        
+        .control-group {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #2c3e50;
+            border-radius: 5px;
+        }
+        
+        .control-group h3 {
+            margin-top: 0;
+            color: #3498db;
+        }
+        
+        .tile-legend {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border: 1px solid #34495e;
+        }
+        
+        .score-display {
+            font-size: 18px;
+            font-weight: bold;
+            color: #f39c12;
+        }
+        
+        .word-display {
+            font-size: 16px;
+            color: #3498db;
+            min-height: 20px;
+        }
+        
+        .instructions {
+            background-color: #1a252f;
+            padding: 15px;
+            border-radius: 5px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+    <h1>Special Tiles Playable Test</h1>
+    <p>Trace words to test special tile behaviors in action!</p>
+    
+    <div id="game-container">
+        <div id="game-canvas"></div>
+        
+        <div id="controls">
+            <div class="control-group">
+                <h3>Tile Legend</h3>
+                <div class="tile-legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #ecf0f1;"></div>
+                        <span>Normal</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #e74c3c;"></div>
+                        <span>Bomb</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #3498db;"></div>
+                        <span>Ice (2 hits)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #95a5a6;"></div>
+                        <span>Stone (4 hits)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #f39c12;"></div>
+                        <span>Multiplier (2x)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #7f8c8d;"></div>
+                        <span>Hidden</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <h3>Game Status</h3>
+                <div class="score-display">Score: <span id="score">0</span></div>
+                <div class="word-display">Current Word: <span id="current-word"></span></div>
+                <div class="word-display">Last Score: <span id="last-score">0</span></div>
+            </div>
+            
+            <div class="control-group">
+                <h3>Instructions</h3>
+                <div class="instructions">
+                    <strong>How to Play:</strong><br>
+                    • Click and drag to trace words<br>
+                    • Release to submit the word<br>
+                    • Valid words will score points<br><br>
+                    
+                    <strong>Special Tiles:</strong><br>
+                    • <span style="color: #e74c3c;">Bomb</span>: Explodes adjacent tiles<br>
+                    • <span style="color: #3498db;">Ice</span>: Takes 2 hits to break<br>
+                    • <span style="color: #95a5a6;">Stone</span>: Takes 4 hits to break<br>
+                    • <span style="color: #f39c12;">Multiplier</span>: Doubles word score<br>
+                    • <span style="color: #7f8c8d;">Hidden</span>: Reveals after 3 surges<br><br>
+                    
+                    <strong>Try these words:</strong><br>
+                    CAT, DOG, WORD, GAME, TEST
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load game scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
+    <script src="src/core/Tile.js?v=9"></script>
+    <script src="src/core/Grid.js?v=9"></script>
+    <script src="src/systems/ScoreSystem.js?v=9"></script>
+    <script src="src/systems/WordValidator.js?v=9"></script>
+    <script src="src/systems/InputSystem.js?v=9"></script>
+    <script src="src/systems/EffectsQueue.js?v=9"></script>
+    <script src="src/utils/LevelLoader.js?v=9"></script>
+
+    <script>
+        let game;
+        let scene;
+        let grid;
+        let scoreSystem;
+        let wordValidator;
+        let inputSystem;
+        let effectsQueue;
+
+        // Game configuration with higher special tile rates for testing
+        const gameConfig = {
+            gridSize: { width: 6, height: 6 },
+            targetScore: 1000,
+            moves: 20,
+            tileDistribution: "scrabble_uk",
+            ripple: {
+                spread: 0.5,
+                power: 1,
+                threshold: 3
+            },
+            specialTiles: {
+                bomb: 0.08,      // 8% chance
+                multiplier: 0.08, // 8% chance
+                ice: 0.08,       // 8% chance
+                stone: 0.05,     // 5% chance
+                hidden: 0.08     // 8% chance
+            }
+        };
+
+        class PlayableTestScene extends Phaser.Scene {
+            constructor() {
+                super({ key: 'PlayableTestScene' });
+            }
+
+            preload() {
+                // Load configuration
+                this.load.json('settings', 'config/settings.json');
+                this.load.json('levels', 'config/levels.json');
+            }
+
+            create() {
+                scene = this;
+                
+                // Load settings and level config
+                const settings = this.cache.json.get('settings');
+                const levels = this.cache.json.get('levels');
+                
+                this.registry.set('settings', settings);
+                this.registry.set('levelConfig', { ...gameConfig, tileDistributionData: levels.tileDistributions.scrabble_uk });
+                this.registry.set('gameState', { isAnimating: false });
+                
+                // Initialize systems
+                scoreSystem = new ScoreSystem(this);
+                wordValidator = new WordValidator(this);
+                effectsQueue = new EffectsQueue(this);
+                this.registry.set('effectsQueue', effectsQueue);
+                
+                // Wait for word validator to load, then create grid and input
+                wordValidator.load().then(() => {
+                    this.initializeGame();
+                }).catch(error => {
+                    console.error('Failed to load dictionary:', error);
+                    this.initializeGame(); // Continue anyway with fallback
+                });
+                
+                // Set up event listeners
+                this.setupEventListeners();
+            }
+            
+            initializeGame() {
+                // Create grid
+                grid = new Grid(this, gameConfig);
+                this.registry.set('grid', grid);
+                
+                // Create input system
+                inputSystem = new InputSystem(this, grid);
+                this.registry.set('inputSystem', inputSystem);
+                
+                console.log('Playable test initialized with special tiles');
+                this.updateUI();
+            }
+            
+            setupEventListeners() {
+                // Listen for word tracing events
+                this.events.on('wordTracing', (data) => {
+                    const word = data.word;
+                    document.getElementById('current-word').textContent = word || '';
+                });
+                
+                // Listen for word submission - USE EFFECTS QUEUE LIKE THE WORKING TEST
+                this.events.on('wordSubmitted', (data) => {
+                    const word = data.word;
+                    const tiles = data.tiles;
+                    
+                    console.log(`Submitted word: ${word}`);
+                    
+                    // Clear current word display
+                    document.getElementById('current-word').textContent = '';
+                    
+                    // Validate word
+                    if (word.length < 3) {
+                        console.log(`Word too short: ${word}`);
+                        return;
+                    }
+                    
+                    // Check if word is valid using WordValidator
+                    const isValid = wordValidator.isValid(word);
+                    
+                    if (isValid) {
+                        console.log(`Valid word: ${word}`);
+                        
+                        // Score the word (this will trigger special tile effects)
+                        const points = scoreSystem.scoreWord(tiles);
+                        console.log(`Scored ${word} for ${points} points`);
+                        
+                        // Use EffectsQueue to handle all tile effects, gravity, and refilling
+                        effectsQueue.triggerWordRipple(tiles);
+                        
+                    } else {
+                        console.log(`Invalid word: ${word}`);
+                        grid.clearSelection();
+                    }
+                });
+                
+                // Listen for effects queue events
+                effectsQueue.events.on('cascade-complete', () => {
+                    console.log('Cascade sequence completed');
+                });
+                
+                effectsQueue.events.on('effect-start', (effect) => {
+                    console.log(`Effect started: ${effect.type}`);
+                });
+                
+                effectsQueue.events.on('queue-empty', () => {
+                    console.log('Effects queue is empty');
+                });
+                
+                // Listen for word scoring events
+                this.events.on('wordScored', (data) => {
+                    document.getElementById('last-score').textContent = data.totalScore;
+                    if (data.hasMultiplier) {
+                        document.getElementById('last-score').textContent += ' (MULTIPLIER!)';
+                        document.getElementById('last-score').style.color = '#f39c12';
+                    } else {
+                        document.getElementById('last-score').style.color = '#3498db';
+                    }
+                    this.updateUI();
+                });
+                
+                // Listen for score updates
+                this.events.on('scoreUpdated', (data) => {
+                    this.updateUI();
+                });
+            }
+            
+            // Removed processTileRemoval - now using EffectsQueue.triggerWordRipple()
+            
+            updateUI() {
+                if (scoreSystem) {
+                    document.getElementById('score').textContent = scoreSystem.getCurrentScore();
+                }
+            }
+        }
+
+        function initializeGame() {
+            const config = {
+                type: Phaser.AUTO,
+                width: 500,
+                height: 500,
+                parent: 'game-canvas',
+                backgroundColor: '#2c3e50',
+                scene: PlayableTestScene
+            };
+
+            game = new Phaser.Game(config);
+        }
+
+        // Initialize the game when page loads
+        window.addEventListener('load', () => {
+            initializeGame();
+        });
+    </script>
+</body>
+</html>

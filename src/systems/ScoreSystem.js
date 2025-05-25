@@ -60,7 +60,8 @@ class ScoreSystem {
                     "15": 400
                 },
                 cascadeMultiplier: 1.5,
-                chainBonusBase: 100
+                chainBonusBase: 100,
+                multiplierFactor: 2.0
             }
         };
     }
@@ -108,25 +109,42 @@ class ScoreSystem {
         }
         
         let baseScore = 0;
+        let hasMultiplier = false;
         
-        // Sum up individual tile values
+        // Sum up individual tile values and check for multiplier tiles
         for (const tile of tiles) {
             const letter = tile.letter.toUpperCase();
             const tileValue = this.getTileValue(letter);
             baseScore += tileValue;
+            
+            // Check if this tile is a multiplier tile
+            if (tile.type === TILE_TYPES.MULTIPLIER) {
+                hasMultiplier = true;
+            }
         }
         
         // Apply word length bonus
         const wordLength = tiles.length;
         const lengthBonus = this.getWordLengthBonus(wordLength);
         
-        const totalScore = baseScore + lengthBonus;
+        let totalScore = baseScore + lengthBonus;
+        
+        // Apply multiplier if any multiplier tiles were used
+        let multiplierBonus = 0;
+        if (hasMultiplier) {
+            const multiplierFactor = this.settings.scoring.multiplierFactor || 2.0;
+            const originalScore = totalScore;
+            totalScore = Math.floor(totalScore * multiplierFactor);
+            multiplierBonus = totalScore - originalScore;
+        }
         
         // Emit scoring event for UI updates
         this.scene.events.emit('wordScored', {
             word: tiles.map(t => t.letter).join(''),
             baseScore: baseScore,
             lengthBonus: lengthBonus,
+            multiplierBonus: multiplierBonus,
+            hasMultiplier: hasMultiplier,
             totalScore: totalScore,
             tiles: tiles
         });
@@ -256,6 +274,8 @@ class ScoreSystem {
                 tileScores: [],
                 baseScore: 0,
                 lengthBonus: 0,
+                multiplierBonus: 0,
+                hasMultiplier: false,
                 totalScore: 0
             };
         }
@@ -263,18 +283,31 @@ class ScoreSystem {
         const word = tiles.map(t => t.letter).join('');
         const tileScores = tiles.map(tile => ({
             letter: tile.letter,
-            value: this.getTileValue(tile.letter)
+            value: this.getTileValue(tile.letter),
+            type: tile.type
         }));
         
         const baseScore = tileScores.reduce((sum, tile) => sum + tile.value, 0);
         const lengthBonus = this.getWordLengthBonus(tiles.length);
-        const totalScore = baseScore + lengthBonus;
+        const hasMultiplier = tiles.some(tile => tile.type === TILE_TYPES.MULTIPLIER);
+        
+        let totalScore = baseScore + lengthBonus;
+        let multiplierBonus = 0;
+        
+        if (hasMultiplier) {
+            const multiplierFactor = this.settings.scoring.multiplierFactor || 2.0;
+            const originalScore = totalScore;
+            totalScore = Math.floor(totalScore * multiplierFactor);
+            multiplierBonus = totalScore - originalScore;
+        }
         
         return {
             word: word,
             tileScores: tileScores,
             baseScore: baseScore,
             lengthBonus: lengthBonus,
+            multiplierBonus: multiplierBonus,
+            hasMultiplier: hasMultiplier,
             totalScore: totalScore
         };
     }

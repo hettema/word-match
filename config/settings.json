@@ -38,7 +38,8 @@
       "15": 400
     },
     "cascadeMultiplier": 1.5,
-    "chainBonusBase": 100
+    "chainBonusBase": 100,
+    "multiplierFactor": 2.0
   },
   "effects": {
     "animationSpeed": 1.0,
