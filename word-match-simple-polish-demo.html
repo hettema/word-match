@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Match - Simple Polish Demo</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@500;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #2c3e50;
+            font-family: 'Rubik', sans-serif;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            max-width: 600px;
+            max-height: 800px;
+            transition: filter 0.3s ease;
+        }
+        
+        .game-container.blurred {
+            filter: blur(5px);
+        }
+        
+        .ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .score-panel {
+            background: rgba(44, 62, 80, 0.9);
+            padding: 15px 20px;
+            border-radius: 10px;
+            border: 2px solid #34495e;
+        }
+        
+        .score-label {
+            color: #bdc3c7;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .score-value {
+            color: white;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .moves-panel {
+            background: rgba(44, 62, 80, 0.9);
+            padding: 15px 20px;
+            border-radius: 10px;
+            border: 2px solid #34495e;
+            text-align: center;
+        }
+        
+        /* Grid styles */
+        .grid-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #34495e;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(6, 64px);
+            grid-template-rows: repeat(6, 64px);
+            gap: 8px;
+        }
+        
+        /* Tile styles - Simple rectangles */
+        .tile {
+            width: 64px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 700;
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.15s ease-out;
+            position: relative;
+            border-radius: 8px;
+            border: 2px solid #34495e;
+        }
+        
+        /* Tile types - Simple solid colors */
+        .tile-normal {
+            background: #ecf0f1;
+            color: #2c3e50;
+        }
+        
+        .tile-bomb {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .tile-ice {
+            background: #3498db;
+            color: white;
+        }
+        
+        .tile-stone {
+            background: #7f8c8d;
+            color: white;
+        }
+        
+        .tile-multiplier {
+            background: #f39c12;
+            color: white;
+        }
+        
+        .tile-hidden {
+            background: #9b59b6;
+            color: white;
+        }
+        
+        /* Hover effect - Simple scale */
+        .tile:hover {
+            transform: scale(1.05);
+        }
+        
+        /* Selection state - Cyan stroke */
+        .tile.selected {
+            border: 4px solid #00d9ff !important;
+            transform: scale(1.15);
+            z-index: 10;
+            animation: selection-pulse 0.5s ease-out;
+        }
+        
+        @keyframes selection-pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1.15); }
+        }
+        
+        /* Destabilization states - Simple tints */
+        .tile.destabilized-1 {
+            background-color: #ffcccc !important;
+        }
+        
+        .tile.destabilized-2 {
+            background-color: #ff9999 !important;
+            animation: wobble 0.3s ease-in-out infinite;
+        }
+        
+        .tile.destabilized-3 {
+            background-color: #ff6666 !important;
+            animation: critical-shake 0.1s ease-in-out infinite;
+        }
+        
+        @keyframes wobble {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-3deg); }
+            75% { transform: rotate(3deg); }
+        }
+        
+        @keyframes critical-shake {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(-2px, 0); }
+            75% { transform: translate(2px, 0); }
+        }
+        
+        /* Surge indicator dots - Simple circles */
+        .surge-dots {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            display: flex;
+            gap: 3px;
+        }
+        
+        .surge-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #ff6b6b;
+        }
+        
+        /* Point value - Simple text */
+        .point-value {
+            position: absolute;
+            bottom: 2px;
+            right: 4px;
+            font-size: 10px;
+            color: rgba(0, 0, 0, 0.5);
+            font-weight: 500;
+        }
+        
+        /* Surge ring effect */
+        .surge-ring {
+            position: absolute;
+            border: 3px solid #00d9ff;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: surge-expand 0.6s ease-out forwards;
+        }
+        
+        @keyframes surge-expand {
+            0% {
+                width: 60px;
+                height: 60px;
+                opacity: 0.8;
+            }
+            100% {
+                width: 180px;
+                height: 180px;
+                opacity: 0;
+            }
+        }
+        
+        /* Explosion fragments */
+        .fragment {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #00d9ff;
+            pointer-events: none;
+        }
+        
+        /* Trace line */
+        .trace-line {
+            position: absolute;
+            height: 3px;
+            background: #00d9ff;
+            pointer-events: none;
+            transform-origin: left center;
+            opacity: 0.8;
+        }
+        
+        /* Current word display */
+        .current-word {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(44, 62, 80, 0.9);
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: 2px solid #00d9ff;
+            color: #00d9ff;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .current-word.visible {
+            opacity: 1;
+        }
+        
+        /* Score popup */
+        .score-popup {
+            position: absolute;
+            color: #2ecc71;
+            font-size: 24px;
+            font-weight: 700;
+            pointer-events: none;
+            animation: score-float 1s ease-out forwards;
+        }
+        
+        @keyframes score-float {
+            0% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+        }
+        
+        /* Instructions */
+        .instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #bdc3c7;
+            font-size: 14px;
+            text-align: center;
+        }
+        
+        /* Control buttons */
+        .controls {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 90%;
+        }
+        
+        .control-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Rubik', sans-serif;
+            font-weight: 500;
+            font-size: 14px;
+            transition: transform 0.1s;
+        }
+        
+        .control-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+        
+        /* Overlay styles */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .overlay.active {
+            display: flex;
+        }
+        
+        .overlay-content {
+            background: #2c3e50;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            border: 3px solid;
+            animation: overlay-bounce 0.5s ease-out;
+        }
+        
+        @keyframes overlay-bounce {
+            0% {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+            60% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        /* Victory overlay */
+        .victory-overlay .overlay-content {
+            border-color: #2ecc71;
+        }
+        
+        .victory-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #2ecc71;
+            margin: 0 0 20px 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .victory-stars {
+            font-size: 48px;
+            margin: 20px 0;
+            animation: star-appear 0.5s ease-out 0.3s both;
+        }
+        
+        @keyframes star-appear {
+            0% {
+                transform: scale(0) rotate(180deg);
+                opacity: 0;
+            }
+            100% {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
+        }
+        
+        .score-summary {
+            background: rgba(46, 204, 113, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 2px solid rgba(46, 204, 113, 0.3);
+        }
+        
+        .score-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            color: #bdc3c7;
+        }
+        
+        .score-row strong {
+            color: #2ecc71;
+        }
+        
+        /* Defeat overlay */
+        .defeat-overlay .overlay-content {
+            border-color: #e74c3c;
+        }
+        
+        .defeat-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #e74c3c;
+            margin: 0 0 20px 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .defeat-emoji {
+            font-size: 64px;
+            margin: 20px 0;
+            animation: defeat-pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes defeat-pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+        }
+        
+        .lives-display {
+            background: rgba(231, 76, 60, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 2px solid rgba(231, 76, 60, 0.3);
+        }
+        
+        .lives-label {
+            color: #bdc3c7;
+            margin-bottom: 10px;
+        }
+        
+        .hearts {
+            font-size: 30px;
+            margin: 10px 0;
+        }
+        
+        .overlay-button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-family: 'Rubik', sans-serif;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+            transition: transform 0.1s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .overlay-button:hover {
+            transform: scale(1.05);
+        }
+        
+        .overlay-button:active {
+            transform: scale(0.95);
+        }
+        
+        .overlay-button.primary {
+            background: #2ecc71;
+        }
+        
+        .overlay-button.danger {
+            background: #e74c3c;
+        }
+        
+        /* Simple confetti for victory */
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #f39c12;
+            animation: confetti-fall 3s linear forwards;
+        }
+        
+        @keyframes confetti-fall {
+            0% {
+                transform: translateY(-100vh) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- UI Layer -->
+        <div class="ui-layer">
+            <div class="score-panel">
+                <div class="score-label">SCORE</div>
+                <div class="score-value" id="score">0</div>
+            </div>
+            
+            <div class="moves-panel">
+                <div class="score-value">15</div>
+                <div class="score-label">MOVES</div>
+            </div>
+        </div>
+        
+        <!-- Grid -->
+        <div class="grid-container">
+            <div class="grid" id="gameGrid"></div>
+        </div>
+        
+        <!-- Current word display -->
+        <div class="current-word" id="currentWord"></div>
+        
+        <!-- Controls -->
+        <div class="controls">
+            <button class="control-btn" onclick="demoSelection()">Demo Selection</button>
+            <button class="control-btn" onclick="demoSurge()">Demo Surge</button>
+            <button class="control-btn" onclick="demoExplosion()">Demo Explosion</button>
+            <button class="control-btn" onclick="demoCascade()">Demo Cascade</button>
+            <button class="control-btn" onclick="showVictory()">Show Victory</button>
+            <button class="control-btn" onclick="showDefeat()">Show Defeat</button>
+        </div>
+        
+        <div class="instructions">
+            Click buttons to see effects • Hover tiles for feedback • Click tiles to select
+        </div>
+        
+        <!-- Victory Overlay -->
+        <div class="overlay victory-overlay" id="victoryOverlay">
+            <div class="overlay-content">
+                <h1 class="victory-title">Level Complete!</h1>
+                <div class="victory-stars">⭐⭐⭐</div>
+                
+                <div class="score-summary">
+                    <div class="score-row">
+                        <span>Score:</span>
+                        <strong>24,850</strong>
+                    </div>
+                    <div class="score-row">
+                        <span>Target:</span>
+                        <strong>20,000 ✓</strong>
+                    </div>
+                    <div class="score-row">
+                        <span>Moves Used:</span>
+                        <strong>12 / 15</strong>
+                    </div>
+                    <div class="score-row">
+                        <span>Best Word:</span>
+                        <strong>MATCHES (124 pts)</strong>
+                    </div>
+                </div>
+                
+                <button class="overlay-button primary" onclick="closeOverlay('victoryOverlay')">Next Level</button>
+            </div>
+        </div>
+        
+        <!-- Defeat Overlay -->
+        <div class="overlay defeat-overlay" id="defeatOverlay">
+            <div class="overlay-content">
+                <h1 class="defeat-title">Out of Moves!</h1>
+                <div class="defeat-emoji">😢</div>
+                
+                <div class="lives-display">
+                    <div class="lives-label">Lives Remaining:</div>
+                    <div class="hearts">❤️ ❤️ 🤍</div>
+                    <div class="score-row">
+                        <span>Your Score:</span>
+                        <strong style="color: #e74c3c">15,420</strong>
+                    </div>
+                    <div class="score-row">
+                        <span>Target Score:</span>
+                        <strong style="color: #e74c3c">20,000</strong>
+                    </div>
+                </div>
+                
+                <button class="overlay-button danger" onclick="closeOverlay('defeatOverlay')">Try Again</button>
+                <button class="overlay-button" onclick="closeOverlay('defeatOverlay')">Main Menu</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Grid setup
+        const letters = ['W', 'O', 'R', 'D', 'M', 'A', 'T', 'C', 'H', 'E', 'S', 'G', 'A', 'M', 'E', 'F', 'U', 'N'];
+        const values = [1, 1, 1, 2, 3, 1, 1, 3, 4, 1, 1, 2, 1, 3, 1, 4, 1, 1];
+        const tileTypes = ['normal', 'normal', 'normal', 'bomb', 'normal', 'ice', 'normal', 'multiplier', 'normal', 'stone', 'normal', 'hidden'];
+        
+        const grid = document.getElementById('gameGrid');
+        let selectedTiles = [];
+        let score = 0;
+        
+        // Create grid
+        for (let i = 0; i < 36; i++) {
+            const tile = document.createElement('div');
+            tile.className = `tile tile-${tileTypes[i % tileTypes.length]}`;
+            tile.dataset.index = i;
+            
+            // Letter
+            const letter = letters[i % letters.length];
+            tile.textContent = letter;
+            
+            // Point value
+            const pointValue = document.createElement('div');
+            pointValue.className = 'point-value';
+            pointValue.textContent = values[i % values.length];
+            tile.appendChild(pointValue);
+            
+            // Special tile indicators
+            if (tileTypes[i % tileTypes.length] === 'bomb') {
+                tile.textContent = '💣';
+            } else if (tileTypes[i % tileTypes.length] === 'ice') {
+                tile.textContent = '🧊';
+            } else if (tileTypes[i % tileTypes.length] === 'stone') {
+                tile.textContent = '🪨';
+            } else if (tileTypes[i % tileTypes.length] === 'multiplier') {
+                tile.textContent = '×2';
+            } else if (tileTypes[i % tileTypes.length] === 'hidden') {
+                tile.textContent = '?';
+            }
+            
+            // Click handler
+            tile.addEventListener('click', () => selectTile(tile));
+            
+            grid.appendChild(tile);
+        }
+        
+        // Selection handling
+        function selectTile(tile) {
+            if (tile.classList.contains('selected')) {
+                tile.classList.remove('selected');
+                selectedTiles = selectedTiles.filter(t => t !== tile);
+            } else {
+                tile.classList.add('selected');
+                selectedTiles.push(tile);
+            }
+            
+            updateCurrentWord();
+        }
+        
+        function updateCurrentWord() {
+            const wordDisplay = document.getElementById('currentWord');
+            if (selectedTiles.length > 0) {
+                const word = selectedTiles.map(t => t.textContent[0]).join('');
+                wordDisplay.textContent = word;
+                wordDisplay.classList.add('visible');
+            } else {
+                wordDisplay.classList.remove('visible');
+            }
+        }
+        
+        // Demo functions
+        function demoSelection() {
+            // Clear previous selections
+            document.querySelectorAll('.tile').forEach(t => t.classList.remove('selected'));
+            selectedTiles = [];
+            
+            // Select WORD
+            const indices = [0, 1, 2, 3];
+            indices.forEach((i, index) => {
+                setTimeout(() => {
+                    const tile = document.querySelector(`[data-index="${i}"]`);
+                    selectTile(tile);
+                    
+                    // Draw trace line
+                    if (index > 0) {
+                        const prevTile = document.querySelector(`[data-index="${indices[index-1]}"]`);
+                        drawTraceLine(prevTile, tile);
+                    }
+                }, index * 200);
+            });
+        }
+        
+        function drawTraceLine(tile1, tile2) {
+            const rect1 = tile1.getBoundingClientRect();
+            const rect2 = tile2.getBoundingClientRect();
+            const container = document.querySelector('.grid-container').getBoundingClientRect();
+            
+            const x1 = rect1.left + rect1.width/2 - container.left;
+            const y1 = rect1.top + rect1.height/2 - container.top;
+            const x2 = rect2.left + rect2.width/2 - container.left;
+            const y2 = rect2.top + rect2.height/2 - container.top;
+            
+            const length = Math.sqrt((x2-x1)**2 + (y2-y1)**2);
+            const angle = Math.atan2(y2-y1, x2-x1) * 180 / Math.PI;
+            
+            const line = document.createElement('div');
+            line.className = 'trace-line';
+            line.style.width = length + 'px';
+            line.style.left = x1 + 'px';
+            line.style.top = y1 + 'px';
+            line.style.transform = `rotate(${angle}deg)`;
+            
+            document.querySelector('.grid-container').appendChild(line);
+            
+            setTimeout(() => line.remove(), 2000);
+        }
+        
+        function demoSurge() {
+            const centerTile = document.querySelector('[data-index="14"]');
+            createSurgeRing(centerTile);
+            
+            // Affect nearby tiles
+            const nearbyIndices = [7, 8, 9, 13, 15, 19, 20, 21];
+            nearbyIndices.forEach((i, index) => {
+                setTimeout(() => {
+                    const tile = document.querySelector(`[data-index="${i}"]`);
+                    addDestabilization(tile);
+                }, index * 50);
+            });
+        }
+        
+        function createSurgeRing(tile) {
+            const rect = tile.getBoundingClientRect();
+            const container = document.querySelector('.grid-container').getBoundingClientRect();
+            
+            const ring = document.createElement('div');
+            ring.className = 'surge-ring';
+            ring.style.left = (rect.left - container.left + rect.width/2 - 30) + 'px';
+            ring.style.top = (rect.top - container.top + rect.height/2 - 30) + 'px';
+            
+            document.querySelector('.grid-container').appendChild(ring);
+            
+            setTimeout(() => ring.remove(), 600);
+        }
+        
+        function addDestabilization(tile) {
+            // Get current destabilization level
+            let level = 0;
+            if (tile.classList.contains('destabilized-3')) level = 3;
+            else if (tile.classList.contains('destabilized-2')) level = 2;
+            else if (tile.classList.contains('destabilized-1')) level = 1;
+            
+            // Remove old class
+            tile.classList.remove('destabilized-1', 'destabilized-2', 'destabilized-3');
+            
+            // Add new class
+            if (level < 3) {
+                level++;
+                tile.classList.add(`destabilized-${level}`);
+                
+                // Add surge dots
+                updateSurgeDots(tile, level);
+            } else {
+                // Explode!
+                setTimeout(() => explodeTile(tile), 100);
+            }
+        }
+        
+        function updateSurgeDots(tile, count) {
+            // Remove existing dots
+            const existing = tile.querySelector('.surge-dots');
+            if (existing) existing.remove();
+            
+            // Add new dots
+            const dots = document.createElement('div');
+            dots.className = 'surge-dots';
+            for (let i = 0; i < count; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'surge-dot';
+                dots.appendChild(dot);
+            }
+            tile.appendChild(dots);
+        }
+        
+        function demoExplosion() {
+            const tiles = [10, 11, 16, 17];
+            tiles.forEach((i, index) => {
+                setTimeout(() => {
+                    const tile = document.querySelector(`[data-index="${i}"]`);
+                    explodeTile(tile);
+                }, index * 100);
+            });
+        }
+        
+        function explodeTile(tile) {
+            const rect = tile.getBoundingClientRect();
+            const container = document.querySelector('.grid-container').getBoundingClientRect();
+            const x = rect.left - container.left + rect.width/2;
+            const y = rect.top - container.top + rect.height/2;
+            
+            // Create fragments
+            for (let i = 0; i < 5; i++) {
+                const fragment = document.createElement('div');
+                fragment.className = 'fragment';
+                fragment.style.left = x + 'px';
+                fragment.style.top = y + 'px';
+                
+                const angle = (i / 5) * Math.PI * 2;
+                const distance = 100;
+                const endX = x + Math.cos(angle) * distance;
+                const endY = y + Math.sin(angle) * distance;
+                
+                document.querySelector('.grid-container').appendChild(fragment);
+                
+                // Animate
+                fragment.animate([
+                    { transform: 'translate(-5px, -5px) scale(1)', opacity: 1 },
+                    { transform: `translate(${endX - x - 5}px, ${endY - y - 5}px) scale(0)`, opacity: 0 }
+                ], {
+                    duration: 500,
+                    easing: 'ease-out'
+                }).onfinish = () => fragment.remove();
+            }
+            
+            // Score popup
+            createScorePopup(x, y, '+50');
+            
+            // Hide tile
+            tile.style.opacity = '0';
+            tile.style.transform = 'scale(0)';
+            
+            // Reset after animation
+            setTimeout(() => {
+                tile.style.opacity = '1';
+                tile.style.transform = 'scale(1)';
+                tile.classList.remove('destabilized-1', 'destabilized-2', 'destabilized-3');
+                const dots = tile.querySelector('.surge-dots');
+                if (dots) dots.remove();
+            }, 600);
+        }
+        
+        function createScorePopup(x, y, text) {
+            const popup = document.createElement('div');
+            popup.className = 'score-popup';
+            popup.textContent = text;
+            popup.style.left = x + 'px';
+            popup.style.top = y + 'px';
+            
+            document.querySelector('.grid-container').appendChild(popup);
+            
+            // Update score
+            score += 50;
+            document.getElementById('score').textContent = score;
+            
+            setTimeout(() => popup.remove(), 1000);
+        }
+        
+        function demoCascade() {
+            // Simulate cascade effect
+            const cascadeTiles = [
+                [4, 10, 16, 22, 28, 34],
+                [5, 11, 17, 23, 29, 35],
+                [9, 15, 21, 27, 33]
+            ];
+            
+            cascadeTiles.forEach((column, colIndex) => {
+                column.forEach((tileIndex, rowIndex) => {
+                    setTimeout(() => {
+                        const tile = document.querySelector(`[data-index="${tileIndex}"]`);
+                        
+                        // Wobble animation
+                        tile.animate([
+                            { transform: 'translateY(0) rotate(0deg)' },
+                            { transform: 'translateY(10px) rotate(-5deg)' },
+                            { transform: 'translateY(0) rotate(5deg)' },
+                            { transform: 'translateY(0) rotate(0deg)' }
+                        ], {
+                            duration: 300,
+                            easing: 'ease-in-out'
+                        });
+                        
+                        // Add slight destabilization
+                        if (Math.random() > 0.5) {
+                            addDestabilization(tile);
+                        }
+                    }, (colIndex * 100) + (rowIndex * 50));
+                });
+            });
+            
+            // Screen shake
+            document.querySelector('.grid-container').animate([
+                { transform: 'translate(-50%, -50%)' },
+                { transform: 'translate(-48%, -50%)' },
+                { transform: 'translate(-52%, -48%)' },
+                { transform: 'translate(-50%, -52%)' },
+                { transform: 'translate(-50%, -50%)' }
+            ], {
+                duration: 200,
+                iterations: 2
+            });
+        }
+        
+        // Overlay functions
+        function showVictory() {
+            document.getElementById('victoryOverlay').classList.add('active');
+            document.querySelector('.game-container').classList.add('blurred');
+            
+            // Animate stars one by one
+            const stars = document.querySelector('.victory-stars');
+            stars.innerHTML = '';
+            ['⭐', '⭐', '⭐'].forEach((star, index) => {
+                setTimeout(() => {
+                    const span = document.createElement('span');
+                    span.textContent = star;
+                    span.style.display = 'inline-block';
+                    span.style.animation = `star-appear 0.5s ease-out`;
+                    stars.appendChild(span);
+                }, index * 200);
+            });
+            
+            // Simple confetti
+            createConfetti();
+        }
+        
+        function createConfetti() {
+            const colors = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6'];
+            for (let i = 0; i < 20; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + '%';
+                    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.animationDelay = Math.random() * 0.5 + 's';
+                    confetti.style.animationDuration = (2 + Math.random() * 2) + 's';
+                    document.body.appendChild(confetti);
+                    
+                    setTimeout(() => confetti.remove(), 4000);
+                }, i * 100);
+            }
+        }
+        
+        function showDefeat() {
+            document.getElementById('defeatOverlay').classList.add('active');
+            document.querySelector('.game-container').classList.add('blurred');
+        }
+        
+        function closeOverlay(overlayId) {
+            document.getElementById(overlayId).classList.remove('active');
+            document.querySelector('.game-container').classList.remove('blurred');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Match - Puzzle Game</title>
+    <meta name="description" content="Word Match - A challenging word puzzle game with cascading effects and strategic gameplay">
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="style.css" as="style">
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" as="style">
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap">
+    
+    <!-- Favicon and app icons -->
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
+    
+    <!-- PWA meta tags -->
+    <meta name="theme-color" content="#2c3e50">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- Performance optimizations -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="format-detection" content="telephone=no">
+</head>
+<body class="game-page">
+    <!-- Game Container -->
+    <div id="game-container">
+        <!-- Game canvas will be inserted here by Phaser -->
+        
+        <!-- Loading Screen -->
+        <div id="loading-screen" class="loading-screen">
+            <div class="loading-content">
+                <div class="loading-spinner"></div>
+                <h2>Word Match</h2>
+                <p>Loading game...</p>
+                <div class="loading-progress">
+                    <div class="loading-bar"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Error Screen (hidden by default) -->
+        <div id="error-screen" class="error-screen" style="display: none;">
+            <div class="error-content">
+                <h2>⚠️ Game Error</h2>
+                <p id="error-message">Something went wrong loading the game.</p>
+                <button id="retry-button" class="game-button">Retry</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Phaser 3 Framework -->
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
+    
+    <!-- Game Systems (load in dependency order) -->
+    <script src="src/utils/LevelLoader.js"></script>
+    <script src="src/systems/WordValidator.js"></script>
+    <script src="src/core/Tile.js"></script>
+    <script src="src/core/Grid.js"></script>
+    <script src="src/systems/EffectsQueue.js"></script>
+    <script src="src/systems/ScoreSystem.js"></script>
+    <script src="src/systems/InputSystem.js"></script>
+    <script src="src/core/GameScene.js"></script>
+    
+    <!-- Game Initialization -->
+    <script>
+        // Visual Style Constants (from style guide)
+        const COLORS = {
+            // Backgrounds
+            bgDark: 0x2c3e50,
+            bgPanel: 0x34495e,
+            
+            // Primary colors
+            primary: 0x3498db,
+            success: 0x2ecc71,
+            danger: 0xe74c3c,
+            warning: 0xf39c12,
+            purple: 0x9b59b6,
+            
+            // UI colors
+            cyan: 0x00d9ff,
+            textLight: 0xecf0f1,
+            textMuted: 0xbdc3c7,
+            border: 0x34495e,
+            
+            // Tile backgrounds
+            tileNormal: 0xecf0f1,
+            tileBomb: 0xe74c3c,
+            tileIce: 0x3498db,
+            tileStone: 0x7f8c8d,
+            tileMultiplier: 0xf39c12,
+            tileHidden: 0x9b59b6
+        };
+        
+        // Animation constants
+        const ANIMATIONS = {
+            hover: {
+                scale: 1.05,
+                duration: 100,
+                ease: 'Back.easeOut'
+            },
+            selection: {
+                scale: 1.15,
+                duration: 200,
+                ease: 'Back.easeOut'
+            },
+            explosion: {
+                duration: 300,
+                ease: 'Back.easeIn'
+            },
+            cascade: {
+                delay: 50,
+                duration: 150,
+                ease: 'Sine.easeInOut'
+            }
+        };
+        
+        // Make constants globally available
+        window.COLORS = COLORS;
+        window.ANIMATIONS = ANIMATIONS;
+        
+        // Game configuration
+        const gameConfig = {
+            type: Phaser.AUTO,
+            width: 800,
+            height: 600,
+            backgroundColor: COLORS.bgDark,
+            parent: 'game-container',
+            scale: {
+                mode: Phaser.Scale.FIT,
+                autoCenter: Phaser.Scale.CENTER_BOTH,
+                width: 800,
+                height: 600
+            },
+            render: {
+                antialias: true,
+                pixelArt: false
+            },
+            physics: {
+                default: 'arcade',
+                arcade: {
+                    gravity: { y: 0 },
+                    debug: false
+                }
+            },
+            scene: GameScene
+        };
+        
+        // Game initialization with error handling
+        let game;
+        let loadingScreen;
+        let errorScreen;
+        
+        function initializeGame() {
+            try {
+                // Get loading elements
+                loadingScreen = document.getElementById('loading-screen');
+                errorScreen = document.getElementById('error-screen');
+                
+                // Show loading screen
+                showLoadingScreen();
+                
+                // Initialize Phaser game
+                game = new Phaser.Game(gameConfig);
+                
+                // Handle game ready
+                game.events.once('ready', () => {
+                    console.log('Game initialized successfully');
+                    hideLoadingScreen();
+                });
+                
+                // Handle game errors
+                game.events.on('error', (error) => {
+                    console.error('Game error:', error);
+                    showErrorScreen('Game initialization failed: ' + error.message);
+                });
+                
+                // Setup retry functionality
+                document.getElementById('retry-button').addEventListener('click', () => {
+                    location.reload();
+                });
+                
+            } catch (error) {
+                console.error('Failed to initialize game:', error);
+                showErrorScreen('Failed to start game: ' + error.message);
+            }
+        }
+        
+        function showLoadingScreen() {
+            if (loadingScreen) {
+                loadingScreen.style.display = 'flex';
+                
+                // Animate loading bar
+                const loadingBar = loadingScreen.querySelector('.loading-bar');
+                if (loadingBar) {
+                    loadingBar.style.width = '0%';
+                    setTimeout(() => {
+                        loadingBar.style.width = '100%';
+                    }, 100);
+                }
+            }
+        }
+        
+        function hideLoadingScreen() {
+            if (loadingScreen) {
+                loadingScreen.style.opacity = '0';
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                }, 300);
+            }
+        }
+        
+        function showErrorScreen(message) {
+            hideLoadingScreen();
+            if (errorScreen) {
+                document.getElementById('error-message').textContent = message;
+                errorScreen.style.display = 'flex';
+            }
+        }
+        
+        // Initialize game when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeGame);
+        } else {
+            initializeGame();
+        }
+        
+        // Handle page visibility changes (pause/resume)
+        document.addEventListener('visibilitychange', () => {
+            if (game && game.scene.isActive('GameScene')) {
+                if (document.hidden) {
+                    game.scene.pause('GameScene');
+                } else {
+                    game.scene.resume('GameScene');
+                }
+            }
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (game) {
+                game.scale.refresh();
+            }
+        });
+        
+        // Prevent context menu on right click (for better mobile experience)
+        document.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+        
+        // Prevent zoom on double tap (iOS Safari)
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', (e) => {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                e.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+    </script>
+</body>
+</html>

@@ -84,8 +84,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 300
   },
   "right": {
     "id": "f49c43449cf90d5f",
@@ -178,13 +177,14 @@
   },
   "active": "dba328133ee3b571",
   "lastOpenFiles": [
+    "word-match-simple-polish-demo.html",
+    "index.html",
     "word-match-style-guide.md",
     "kanban.md",
     "word-match-practical-style-guide.md",
     "tests/test-advanced-scoring.html",
     "word-match-style-implementation.md",
     "phaser-style-implementation.md",
-    "index.html",
     "tests/index.html",
     "tests/test-styles.css",
     "tests/test-word-validator.html",
