@@ -177,6 +177,10 @@
   },
   "active": "dba328133ee3b571",
   "lastOpenFiles": [
+    "test-grid.html",
+    "src/core/Grid.js",
+    "src/core/Tile.js",
+    "src/core",
     "test-config.html",
     "src/utils/LevelLoader.js",
     "src/utils",

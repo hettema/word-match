@@ -236,3 +236,8 @@ class LevelLoader {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = LevelLoader;
 }
+
+// Make available globally for script tag imports
+if (typeof window !== 'undefined') {
+    window.LevelLoader = LevelLoader;
+}

@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grid System Test - Word Cascade</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background-color: #2c3e50;
+            color: white;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .controls button {
+            padding: 10px 15px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .controls button:hover {
+            background-color: #2980b9;
+        }
+        
+        .controls button:disabled {
+            background-color: #7f8c8d;
+            cursor: not-allowed;
+        }
+        
+        .info-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .info-box {
+            background-color: #34495e;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        
+        .info-box h3 {
+            margin-top: 0;
+            color: #3498db;
+        }
+        
+        .stats {
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .game-container {
+            display: flex;
+            justify-content: center;
+            background-color: #34495e;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        
+        #game-canvas {
+            border: 2px solid #3498db;
+            border-radius: 5px;
+        }
+        
+        .log {
+            margin-top: 20px;
+            background-color: #34495e;
+            padding: 15px;
+            border-radius: 5px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .log h3 {
+            margin-top: 0;
+            color: #3498db;
+        }
+        
+        .log-entry {
+            font-family: monospace;
+            font-size: 12px;
+            margin: 5px 0;
+            padding: 5px;
+            background-color: #2c3e50;
+            border-radius: 3px;
+        }
+        
+        @media (max-width: 768px) {
+            .info-panel {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎮 Grid System Test</h1>
+            <p>Testing the core Grid and Tile management system</p>
+        </div>
+        
+        <div class="controls">
+            <button id="btn-new-grid">New Grid</button>
+            <button id="btn-apply-gravity">Apply Gravity</button>
+            <button id="btn-refill">Refill Grid</button>
+            <button id="btn-explode-random">Explode Random</button>
+            <button id="btn-clear-selection">Clear Selection</button>
+            <button id="btn-toggle-debug">Toggle Debug</button>
+        </div>
+        
+        <div class="info-panel">
+            <div class="info-box">
+                <h3>Grid Information</h3>
+                <div id="grid-info" class="stats">
+                    <div>Dimensions: <span id="grid-dimensions">-</span></div>
+                    <div>Total Tiles: <span id="total-tiles">-</span></div>
+                    <div>Empty Spaces: <span id="empty-spaces">-</span></div>
+                    <div>Selected Tiles: <span id="selected-tiles">0</span></div>
+                </div>
+            </div>
+            
+            <div class="info-box">
+                <h3>Tile Statistics</h3>
+                <div id="tile-stats" class="stats">
+                    <div>Normal: <span id="stat-normal">-</span></div>
+                    <div>Bomb: <span id="stat-bomb">-</span></div>
+                    <div>Ice: <span id="stat-ice">-</span></div>
+                    <div>Stone: <span id="stat-stone">-</span></div>
+                    <div>Multiplier: <span id="stat-multiplier">-</span></div>
+                    <div>Hidden: <span id="stat-hidden">-</span></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="game-container">
+            <div id="game-canvas"></div>
+        </div>
+        
+        <div class="log">
+            <h3>Event Log</h3>
+            <div id="log-content"></div>
+        </div>
+    </div>
+
+    <script src="./src/utils/LevelLoader.js"></script>
+    <script type="module">
+        import { Grid } from './src/core/Grid.js';
+        import { Tile, TILE_STATES, TILE_TYPES } from './src/core/Tile.js';
+
+        class GridTestScene extends Phaser.Scene {
+            constructor() {
+                super({ key: 'GridTestScene' });
+                this.grid = null;
+                this.selectedTiles = [];
+                this.debugMode = false;
+            }
+
+            async preload() {
+                // Load configurations
+                try {
+                    const levelConfig = await LevelLoader.load(1);
+                    const settings = await LevelLoader.loadSettings();
+                    
+                    this.registry.set('levelConfig', levelConfig);
+                    this.registry.set('settings', settings);
+                    
+                    this.log('✅ Configurations loaded successfully');
+                } catch (error) {
+                    this.log('❌ Failed to load configurations: ' + error.message);
+                }
+            }
+
+            create() {
+                this.log('🎮 Grid Test Scene initialized');
+                
+                // Set up UI controls first
+                this.setupControls();
+                
+                // Set up input handling
+                this.setupInput();
+                
+                // Create initial grid after config is loaded
+                this.createNewGrid();
+                
+                // Update stats display
+                this.updateStats();
+            }
+
+            createNewGrid() {
+                // Destroy existing grid
+                if (this.grid) {
+                    this.grid.destroy();
+                }
+                
+                // Create new grid with level 1 config
+                const levelConfig = this.registry.get('levelConfig');
+                
+                if (!levelConfig) {
+                    this.log('❌ Level config not loaded yet');
+                    return;
+                }
+                
+                this.log(`📋 Level config: ${JSON.stringify(levelConfig.gridSize)}`);
+                
+                try {
+                    this.grid = new Grid(this, levelConfig);
+                    this.log(`📋 Created new ${levelConfig.gridSize.width}x${levelConfig.gridSize.height} grid`);
+                    this.updateStats();
+                } catch (error) {
+                    this.log(`❌ Failed to create grid: ${error.message}`);
+                }
+            }
+
+            setupInput() {
+                // Mouse/touch input for tile selection
+                this.input.on('pointerdown', (pointer) => {
+                    const gridPos = this.grid.worldToGridPosition(pointer.x, pointer.y);
+                    if (gridPos) {
+                        const tile = this.grid.getTileAt(gridPos.x, gridPos.y);
+                        if (tile && tile.canBeSelected()) {
+                            this.toggleTileSelection(tile);
+                        }
+                    }
+                });
+                
+                // Hover effects
+                this.input.on('pointermove', (pointer) => {
+                    if (!this.grid) return; // Guard against null grid
+                    
+                    // Clear previous highlights
+                    this.grid.getAllTiles().forEach(tile => {
+                        if (!tile.isSelected) {
+                            tile.setHighlighted(false);
+                        }
+                    });
+                    
+                    // Highlight current tile
+                    const gridPos = this.grid.worldToGridPosition(pointer.x, pointer.y);
+                    if (gridPos) {
+                        const tile = this.grid.getTileAt(gridPos.x, gridPos.y);
+                        if (tile && tile.canBeSelected() && !tile.isSelected) {
+                            tile.setHighlighted(true);
+                        }
+                    }
+                });
+            }
+
+            setupControls() {
+                document.getElementById('btn-new-grid').onclick = () => {
+                    this.createNewGrid();
+                };
+                
+                document.getElementById('btn-apply-gravity').onclick = () => {
+                    this.applyGravity();
+                };
+                
+                document.getElementById('btn-refill').onclick = () => {
+                    this.refillGrid();
+                };
+                
+                document.getElementById('btn-explode-random').onclick = () => {
+                    this.explodeRandomTiles();
+                };
+                
+                document.getElementById('btn-clear-selection').onclick = () => {
+                    this.clearSelection();
+                };
+                
+                document.getElementById('btn-toggle-debug').onclick = () => {
+                    this.toggleDebugMode();
+                };
+            }
+
+            toggleTileSelection(tile) {
+                if (tile.isSelected) {
+                    tile.setSelected(false);
+                    this.selectedTiles = this.selectedTiles.filter(t => t !== tile);
+                    this.log(`🔹 Deselected ${tile.letter} at (${tile.gridX}, ${tile.gridY})`);
+                } else {
+                    tile.setSelected(true);
+                    this.selectedTiles.push(tile);
+                    this.log(`🔸 Selected ${tile.letter} at (${tile.gridX}, ${tile.gridY}) - Value: ${tile.value}`);
+                }
+                
+                this.updateStats();
+            }
+
+            applyGravity() {
+                const movements = this.grid.applyGravity();
+                
+                if (movements.length > 0) {
+                    this.log(`⬇️ Applied gravity - ${movements.length} tiles moved`);
+                    
+                    // Animate tile movements
+                    movements.forEach(movement => {
+                        const newWorldPos = this.grid.gridToWorldPosition(movement.tile.gridX, movement.tile.gridY);
+                        movement.tile.setWorldPosition(newWorldPos.x, newWorldPos.y);
+                    });
+                    
+                    this.updateStats();
+                } else {
+                    this.log('⬇️ No tiles needed to fall');
+                }
+            }
+
+            refillGrid() {
+                const newTiles = this.grid.refillGrid();
+                
+                if (newTiles.length > 0) {
+                    this.log(`🔄 Refilled grid - ${newTiles.length} new tiles created`);
+                    this.updateStats();
+                } else {
+                    this.log('🔄 Grid already full');
+                }
+            }
+
+            explodeRandomTiles() {
+                const allTiles = this.grid.getAllTiles();
+                const normalTiles = allTiles.filter(tile => tile.state === TILE_STATES.NORMAL);
+                
+                if (normalTiles.length === 0) {
+                    this.log('💥 No tiles available to explode');
+                    return;
+                }
+                
+                // Explode 1-3 random tiles
+                const numToExplode = Math.min(Math.floor(Math.random() * 3) + 1, normalTiles.length);
+                const tilesToExplode = [];
+                
+                for (let i = 0; i < numToExplode; i++) {
+                    const randomIndex = Math.floor(Math.random() * normalTiles.length);
+                    const tile = normalTiles.splice(randomIndex, 1)[0];
+                    tilesToExplode.push(tile);
+                }
+                
+                // Set tiles to exploding state and remove them
+                tilesToExplode.forEach(tile => {
+                    tile.setState(TILE_STATES.EXPLODING);
+                    this.log(`💥 Exploded ${tile.letter} at (${tile.gridX}, ${tile.gridY})`);
+                    
+                    // Remove after a short delay to show explosion state
+                    setTimeout(() => {
+                        this.grid.removeTileAt(tile.gridX, tile.gridY);
+                        this.updateStats();
+                    }, 300);
+                });
+                
+                this.updateStats();
+            }
+
+            clearSelection() {
+                this.grid.clearSelection();
+                this.selectedTiles = [];
+                this.log('🔄 Cleared all selections');
+                this.updateStats();
+            }
+
+            toggleDebugMode() {
+                this.debugMode = !this.debugMode;
+                this.log(`🔧 Debug mode: ${this.debugMode ? 'ON' : 'OFF'}`);
+                
+                if (this.debugMode) {
+                    this.showDebugInfo();
+                }
+            }
+
+            showDebugInfo() {
+                const stats = this.grid.getStats();
+                this.log('📊 Grid Statistics:');
+                this.log(`   Total tiles: ${stats.totalTiles}`);
+                this.log(`   Empty spaces: ${stats.emptySpaces}`);
+                this.log(`   By state: ${JSON.stringify(stats.tilesByState)}`);
+                this.log(`   By type: ${JSON.stringify(stats.tilesByType)}`);
+            }
+
+            updateStats() {
+                if (!this.grid) {
+                    // Show default values when grid is not ready
+                    document.getElementById('grid-dimensions').textContent = '-';
+                    document.getElementById('total-tiles').textContent = '-';
+                    document.getElementById('empty-spaces').textContent = '-';
+                    document.getElementById('selected-tiles').textContent = '0';
+                    document.getElementById('stat-normal').textContent = '-';
+                    document.getElementById('stat-bomb').textContent = '-';
+                    document.getElementById('stat-ice').textContent = '-';
+                    document.getElementById('stat-stone').textContent = '-';
+                    document.getElementById('stat-multiplier').textContent = '-';
+                    document.getElementById('stat-hidden').textContent = '-';
+                    return;
+                }
+                
+                const stats = this.grid.getStats();
+                
+                // Update grid info
+                document.getElementById('grid-dimensions').textContent = `${this.grid.width}x${this.grid.height}`;
+                document.getElementById('total-tiles').textContent = stats.totalTiles;
+                document.getElementById('empty-spaces').textContent = stats.emptySpaces;
+                document.getElementById('selected-tiles').textContent = this.selectedTiles.length;
+                
+                // Update tile type stats
+                document.getElementById('stat-normal').textContent = stats.tilesByType.NORMAL || 0;
+                document.getElementById('stat-bomb').textContent = stats.tilesByType.BOMB || 0;
+                document.getElementById('stat-ice').textContent = stats.tilesByType.ICE || 0;
+                document.getElementById('stat-stone').textContent = stats.tilesByType.STONE || 0;
+                document.getElementById('stat-multiplier').textContent = stats.tilesByType.MULTIPLIER || 0;
+                document.getElementById('stat-hidden').textContent = stats.tilesByType.HIDDEN || 0;
+            }
+
+            log(message) {
+                const timestamp = new Date().toLocaleTimeString();
+                const logEntry = document.createElement('div');
+                logEntry.className = 'log-entry';
+                logEntry.textContent = `[${timestamp}] ${message}`;
+                
+                const logContent = document.getElementById('log-content');
+                logContent.appendChild(logEntry);
+                logContent.scrollTop = logContent.scrollHeight;
+                
+                console.log(message);
+            }
+        }
+
+        // Phaser game configuration
+        const config = {
+            type: Phaser.AUTO,
+            width: 800,
+            height: 600,
+            parent: 'game-canvas',
+            backgroundColor: '#2c3e50',
+            scene: GridTestScene,
+            scale: {
+                mode: Phaser.Scale.NONE,
+                autoCenter: Phaser.Scale.CENTER_BOTH
+            }
+        };
+
+        // Start the game
+        const game = new Phaser.Game(config);
+    </script>
+</body>
+</html>
