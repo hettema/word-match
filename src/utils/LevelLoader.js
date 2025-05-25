@@ -47,7 +47,7 @@ class LevelLoader {
      */
     static async loadLevels() {
         try {
-            const response = await fetch('./config/levels.json');
+            const response = await fetch('/config/levels.json?v=' + Date.now());
             
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -77,7 +77,7 @@ class LevelLoader {
      */
     static async loadSettings() {
         try {
-            const response = await fetch('./config/settings.json');
+            const response = await fetch('/config/settings.json?v=' + Date.now());
             
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);

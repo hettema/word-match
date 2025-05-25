@@ -1,0 +1,393 @@
+/* Word Match Game - Main Stylesheet */
+
+/* Reset and base styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+}
+
+/* Game-specific body styling (for game pages) */
+body.game-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+/* Game container */
+#game-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    max-width: 1200px;
+    max-height: 800px;
+    background: #2c3e50;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+}
+
+/* Canvas styling */
+canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 8px;
+}
+
+/* HUD Overlay Styles (for HTML elements if needed) */
+.hud-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100px;
+    background: linear-gradient(180deg, rgba(44, 62, 80, 0.95) 0%, rgba(44, 62, 80, 0.8) 100%);
+    backdrop-filter: blur(5px);
+    z-index: 10;
+    pointer-events: none;
+}
+
+.hud-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 100%;
+    padding: 0 20px;
+    color: white;
+}
+
+.hud-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.hud-label {
+    font-size: 12px;
+    font-weight: bold;
+    color: #bdc3c7;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.hud-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: #ecf0f1;
+}
+
+.hud-subtext {
+    font-size: 10px;
+    color: #95a5a6;
+}
+
+/* Score specific styling */
+.score-value {
+    color: #f39c12;
+}
+
+/* Moves specific styling */
+.moves-value {
+    color: #3498db;
+}
+
+.moves-low {
+    color: #e74c3c;
+    animation: pulse 1s infinite;
+}
+
+.moves-medium {
+    color: #f39c12;
+}
+
+/* Progress bar styling */
+.progress-container {
+    width: 200px;
+    height: 8px;
+    background: #34495e;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 5px 0;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #3498db 0%, #2ecc71 100%);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.progress-complete {
+    background: linear-gradient(90deg, #27ae60 0%, #2ecc71 100%);
+}
+
+/* Button styling */
+.game-button {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.game-button:hover {
+    background: #c0392b;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.game-button:active {
+    transform: translateY(0);
+}
+
+/* Responsive Design */
+
+/* Large screens (desktop) */
+@media (min-width: 1200px) {
+    #game-container {
+        width: 1200px;
+        height: 800px;
+    }
+    
+    .hud-value {
+        font-size: 28px;
+    }
+    
+    .hud-label {
+        font-size: 14px;
+    }
+}
+
+/* Medium screens (tablet landscape) */
+@media (max-width: 1199px) and (min-width: 768px) {
+    #game-container {
+        width: 95vw;
+        height: 90vh;
+        max-width: 1000px;
+        max-height: 700px;
+    }
+    
+    .hud-content {
+        padding: 0 15px;
+    }
+    
+    .hud-value {
+        font-size: 22px;
+    }
+    
+    .progress-container {
+        width: 150px;
+    }
+}
+
+/* Small screens (tablet portrait, large phones) */
+@media (max-width: 767px) and (min-width: 480px) {
+    #game-container {
+        width: 100vw;
+        height: 100vh;
+        border-radius: 0;
+        max-width: none;
+        max-height: none;
+    }
+    
+    .hud-content {
+        padding: 0 10px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .hud-section {
+        flex: 1;
+        min-width: 80px;
+    }
+    
+    .hud-value {
+        font-size: 20px;
+    }
+    
+    .hud-label {
+        font-size: 10px;
+    }
+    
+    .progress-container {
+        width: 120px;
+        height: 6px;
+    }
+    
+    .game-button {
+        padding: 6px 12px;
+        font-size: 10px;
+    }
+}
+
+/* Extra small screens (phones) */
+@media (max-width: 479px) {
+    #game-container {
+        width: 100vw;
+        height: 100vh;
+        border-radius: 0;
+    }
+    
+    .hud-overlay {
+        height: 80px;
+    }
+    
+    .hud-content {
+        padding: 0 8px;
+        flex-wrap: wrap;
+        justify-content: space-around;
+    }
+    
+    .hud-section {
+        flex: 0 1 auto;
+        min-width: 60px;
+    }
+    
+    .hud-value {
+        font-size: 18px;
+    }
+    
+    .hud-label {
+        font-size: 9px;
+    }
+    
+    .hud-subtext {
+        font-size: 8px;
+    }
+    
+    .progress-container {
+        width: 100px;
+        height: 5px;
+    }
+    
+    .game-button {
+        padding: 4px 8px;
+        font-size: 9px;
+    }
+}
+
+/* Minimum width support (375px as specified) */
+@media (max-width: 375px) {
+    .hud-content {
+        padding: 0 5px;
+    }
+    
+    .hud-section {
+        min-width: 50px;
+    }
+    
+    .hud-value {
+        font-size: 16px;
+    }
+    
+    .progress-container {
+        width: 80px;
+    }
+}
+
+/* Animations */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.6; }
+    100% { opacity: 1; }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Utility classes */
+.fade-in {
+    animation: fadeIn 0.3s ease-in;
+}
+
+.slide-in {
+    animation: slideIn 0.3s ease-out;
+}
+
+/* Touch optimization */
+@media (hover: none) and (pointer: coarse) {
+    .game-button {
+        min-height: 44px;
+        min-width: 44px;
+        padding: 10px 16px;
+    }
+    
+    .hud-section {
+        padding: 5px;
+    }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    canvas {
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+    }
+}
+
+/* Dark mode support (if system preference) */
+@media (prefers-color-scheme: dark) {
+    body {
+        background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Focus styles for accessibility */
+.game-button:focus {
+    outline: 2px solid #3498db;
+    outline-offset: 2px;
+}
+
+/* Print styles (hide game when printing) */
+@media print {
+    #game-container {
+        display: none;
+    }
+    
+    body::after {
+        content: "Word Match Game - Please view in browser";
+        display: block;
+        text-align: center;
+        font-size: 24px;
+        margin-top: 50px;
+    }
+}

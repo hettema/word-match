@@ -178,17 +178,17 @@
   },
   "active": "dba328133ee3b571",
   "lastOpenFiles": [
-    "test-special-tiles-playable.html",
-    "test-special-tiles.html",
-    "test-ripple-effects.html",
-    "test-scoring-playable.html",
-    "test-scoring-simple.html",
-    "test-score-game.html",
-    "test-score-system.html",
-    "src/systems/ScoreSystem.js",
-    "test-word-validator.html",
-    "src/systems/WordValidator.js",
-    "debug-bottom-row.js",
+    "index.html",
+    "tests/index.html",
+    "tests/test-styles.css",
+    "tests/test-word-validator.html",
+    "tests/test-ui-hud.html",
+    "tests/test-special-tiles.html",
+    "tests/test-special-tiles-playable.html",
+    "tests/test-scoring-playable.html",
+    "tests/test-ripple-effects.html",
+    "tests/test-input.html",
+    "tests/test-grid.html",
     "kanban.md"
   ]
 }

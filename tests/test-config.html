@@ -49,8 +49,8 @@
         <h2>CONFIG-01 Acceptance Criteria Test</h2>
         <p>Testing all acceptance criteria for the configuration system:</p>
         <ul>
-            <li>✅ Level configurations load from <code>config/levels.json</code></li>
-            <li>✅ Settings load from <code>config/settings.json</code></li>
+            <li>✅ Level configurations load from <code>../config/levels.json</code></li>
+            <li>✅ Settings load from <code>../config/settings.json</code></li>
             <li>✅ <code>LevelLoader.load()</code> returns proper config objects</li>
             <li>✅ All PRD Section 3 parameters are configurable</li>
             <li>✅ Error handling for missing/invalid configs</li>
@@ -72,7 +72,7 @@
         <div id="results"></div>
     </div>
 
-    <script src="src/utils/LevelLoader.js"></script>
+    <script src="../src/utils/LevelLoader.js"></script>
     <script>
         const results = document.getElementById('results');
 

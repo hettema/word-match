@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Match - UI & HUD Test</title>
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="test-styles.css">
+</head>
+<body class="test-page game-page">
+    <!-- Navigation -->
+    <div class="test-nav">
+        <h3>UI & HUD Test</h3>
+        <div class="nav-links">
+            <a href="index.html" class="home">← Test Suite</a>
+            <a href="#" onclick="location.reload()">Reload</a>
+        </div>
+    </div>
+    
+    <div class="test-container" id="game-container">
+        <!-- Game canvas will be inserted here by Phaser -->
+    </div>
+    
+    <!-- Test Information -->
+    <div class="test-info">
+        <h4>UI-01 Test: Game Scene & HUD</h4>
+        <ul>
+            <li>Score display with progress bar</li>
+            <li>Move counter with color coding</li>
+            <li>Responsive HUD layout</li>
+            <li>Victory/Defeat conditions</li>
+        </ul>
+        <strong>Controls:</strong>
+        <ul>
+            <li>Trace words with mouse/touch</li>
+            <li>Use test buttons to simulate game states</li>
+            <li>Keyboard: S (score), M (move), R (reset)</li>
+        </ul>
+    </div>
+    
+    <!-- Test Controls -->
+    <div class="test-controls">
+        <h4>Test Controls</h4>
+        <button onclick="addTestScore()" class="success">Add Score</button>
+        <button onclick="useTestMove()">Use Move</button>
+        <button onclick="testVictory()" class="success">Test Victory</button>
+        <button onclick="testDefeat()" class="danger">Test Defeat</button>
+        <button onclick="resetGame()">Reset Game</button>
+    </div>
+
+    <!-- Phaser 3 - Load first -->
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
+    
+    <!-- Load all required scripts in dependency order -->
+    <script src="../../src/core/Tile.js"></script>
+    <script src="../../src/core/Grid.js"></script>
+    <script src="../../src/systems/EffectsQueue.js"></script>
+    <script src="../../src/systems/WordValidator.js"></script>
+    <script src="../../src/systems/ScoreSystem.js"></script>
+    <script src="../../src/systems/InputSystem.js"></script>
+    <script src="../../src/utils/LevelLoader.js"></script>
+    <script src="../../src/core/GameScene.js"></script>
+    
+    <script>
+        // Global game reference for testing
+        let game;
+        let gameScene;
+        
+        // Test functions
+        function addTestScore() {
+            if (gameScene && gameScene.scoreSystem) {
+                gameScene.scoreSystem.addScore(100);
+                console.log('Added 100 points for testing');
+            }
+        }
+        
+        function useTestMove() {
+            if (gameScene && gameScene.movesRemaining > 0) {
+                gameScene.movesRemaining--;
+                gameScene.updateHUD();
+                gameScene.checkGameOver();
+                console.log('Used a move for testing');
+            }
+        }
+        
+        function testVictory() {
+            if (gameScene && gameScene.scoreSystem) {
+                const targetScore = gameScene.scoreSystem.getTargetScore();
+                gameScene.scoreSystem.addScore(targetScore);
+                gameScene.checkGameOver();
+                console.log('Triggered victory condition');
+            }
+        }
+        
+        function testDefeat() {
+            if (gameScene) {
+                gameScene.movesRemaining = 0;
+                gameScene.updateHUD();
+                gameScene.checkGameOver();
+                console.log('Triggered defeat condition');
+            }
+        }
+        
+        function resetGame() {
+            if (gameScene) {
+                gameScene.scoreSystem.resetScore();
+                gameScene.movesRemaining = gameScene.maxMoves;
+                gameScene.setGameState('playing');
+                gameScene.updateHUD();
+                
+                // Hide overlays
+                if (gameScene.victoryOverlay) {
+                    gameScene.victoryOverlay.setVisible(false);
+                    gameScene.victoryText.setVisible(false);
+                }
+                if (gameScene.defeatOverlay) {
+                    gameScene.defeatOverlay.setVisible(false);
+                    gameScene.defeatText.setVisible(false);
+                }
+                
+                gameScene.statusText.setText('Select tiles to form words!');
+                gameScene.statusText.setColor('#27ae60');
+                console.log('Game reset');
+            }
+        }
+        
+        // Phaser game configuration
+        const config = {
+            type: Phaser.AUTO,
+            width: 800,
+            height: 600,
+            parent: 'game-container',
+            backgroundColor: '#34495e',
+            scale: {
+                mode: Phaser.Scale.FIT,
+                autoCenter: Phaser.Scale.CENTER_BOTH,
+                min: {
+                    width: 375,
+                    height: 280
+                },
+                max: {
+                    width: 1200,
+                    height: 800
+                }
+            },
+            scene: GameScene,
+            physics: {
+                default: 'arcade',
+                arcade: {
+                    debug: false
+                }
+            }
+        };
+        
+        // Initialize the game
+        window.addEventListener('load', () => {
+            console.log('Initializing Word Match UI Test...');
+            
+            game = new Phaser.Game(config);
+            
+            // Get reference to game scene for testing
+            game.events.on('ready', () => {
+                gameScene = game.scene.getScene('GameScene');
+                console.log('Game scene ready for UI testing');
+            });
+        });
+        
+        // Handle window resize for responsive testing
+        window.addEventListener('resize', () => {
+            if (game) {
+                game.scale.refresh();
+            }
+        });
+        
+        // Keyboard shortcuts for testing
+        document.addEventListener('keydown', (event) => {
+            switch(event.key) {
+                case 's':
+                case 'S':
+                    addTestScore();
+                    break;
+                case 'm':
+                case 'M':
+                    useTestMove();
+                    break;
+                case 'r':
+                case 'R':
+                    resetGame();
+                    break;
+            }
+        });
+        
+        // Log responsive breakpoints for testing
+        function logBreakpoint() {
+            const width = window.innerWidth;
+            let breakpoint = 'Extra Large';
+            
+            if (width < 375) breakpoint = 'Minimum';
+            else if (width < 480) breakpoint = 'Extra Small';
+            else if (width < 768) breakpoint = 'Small';
+            else if (width < 1200) breakpoint = 'Medium';
+            
+            console.log(`Current breakpoint: ${breakpoint} (${width}px)`);
+        }
+        
+        window.addEventListener('resize', logBreakpoint);
+        logBreakpoint(); // Log initial breakpoint
+    </script>
+</body>
+</html>

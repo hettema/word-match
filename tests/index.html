@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Match - Test Suite</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        /* Test suite specific styles */
+        .test-suite-container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            min-height: calc(100vh - 40px);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #3498db;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        
+        .header p {
+            color: #7f8c8d;
+            font-size: 1.1em;
+            margin: 0;
+        }
+        
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .test-card {
+            background: #ffffff;
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .test-card:hover {
+            border-color: #3498db;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(52, 152, 219, 0.15);
+        }
+        
+        .test-card.completed {
+            border-color: #27ae60;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fff9 100%);
+        }
+        
+        .test-card.completed::before {
+            content: "✅";
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 1.2em;
+        }
+        
+        .test-card.in-progress {
+            border-color: #f39c12;
+            background: linear-gradient(135deg, #ffffff 0%, #fffbf5 100%);
+        }
+        
+        .test-card.in-progress::before {
+            content: "🚧";
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 1.2em;
+        }
+        
+        .test-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            padding-right: 30px;
+        }
+        
+        .test-description {
+            color: #7f8c8d;
+            font-size: 0.95em;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+        
+        .test-features {
+            list-style: none;
+            padding: 0;
+            margin: 15px 0;
+        }
+        
+        .test-features li {
+            color: #34495e;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+            padding-left: 20px;
+            position: relative;
+        }
+        
+        .test-features li::before {
+            content: "•";
+            color: #3498db;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+        
+        .test-link {
+            display: inline-block;
+            background: #3498db;
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: background 0.3s ease;
+            margin-top: 10px;
+        }
+        
+        .test-link:hover {
+            background: #2980b9;
+        }
+        
+        .test-link.completed {
+            background: #27ae60;
+        }
+        
+        .test-link.completed:hover {
+            background: #229954;
+        }
+        
+        .status-legend {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        
+        .status-legend h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+        
+        .legend-items {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+            color: #34495e;
+        }
+        
+        .progress-overview {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .progress-stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .progress-stat {
+            text-align: center;
+        }
+        
+        .progress-stat .number {
+            font-size: 2em;
+            font-weight: bold;
+            display: block;
+        }
+        
+        .progress-stat .label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .test-suite-container {
+                margin: 10px;
+                padding: 15px;
+            }
+            
+            .test-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .progress-stats {
+                gap: 20px;
+            }
+            
+            .legend-items {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="test-suite-container">
+        <div class="header">
+            <h1>Word Match Game - Test Suite</h1>
+            <p>Comprehensive testing environment for all game systems and features</p>
+        </div>
+        
+        <div class="progress-overview">
+            <h2>Development Progress</h2>
+            <div class="progress-stats">
+                <div class="progress-stat">
+                    <span class="number">8</span>
+                    <span class="label">Completed</span>
+                </div>
+                <div class="progress-stat">
+                    <span class="number">1</span>
+                    <span class="label">In Progress</span>
+                </div>
+                <div class="progress-stat">
+                    <span class="number">6</span>
+                    <span class="label">Remaining</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-grid">
+            <!-- Core System Tests -->
+            <div class="test-card completed">
+                <h3 class="test-title">Configuration System</h3>
+                <p class="test-description">Test level loading, settings management, and configuration validation.</p>
+                <ul class="test-features">
+                    <li>Level configuration loading</li>
+                    <li>Settings validation</li>
+                    <li>Error handling</li>
+                </ul>
+                <a href="test-config.html" class="test-link completed">Run Test</a>
+            </div>
+            
+            <div class="test-card completed">
+                <h3 class="test-title">Grid System</h3>
+                <p class="test-description">Test core grid functionality, tile management, and neighbor detection.</p>
+                <ul class="test-features">
+                    <li>Grid creation and layout</li>
+                    <li>Tile positioning</li>
+                    <li>Neighbor detection</li>
+                    <li>Grid state management</li>
+                </ul>
+                <a href="test-grid.html" class="test-link completed">Run Test</a>
+            </div>
+            
+            <div class="test-card completed">
+                <h3 class="test-title">Word Validation</h3>
+                <p class="test-description">Test dictionary loading, word validation, and performance optimization.</p>
+                <ul class="test-features">
+                    <li>Dictionary loading (267K+ words)</li>
+                    <li>Fast word lookup</li>
+                    <li>Case-insensitive validation</li>
+                    <li>Performance metrics</li>
+                </ul>
+                <a href="test-word-validator.html" class="test-link completed">Run Test</a>
+            </div>
+            
+            <div class="test-card completed">
+                <h3 class="test-title">Input System</h3>
+                <p class="test-description">Test word tracing, touch/mouse input, and selection validation.</p>
+                <ul class="test-features">
+                    <li>8-directional tracing</li>
+                    <li>Touch and mouse support</li>
+                    <li>Visual feedback</li>
+                    <li>Adjacent tile validation</li>
+                </ul>
+                <a href="test-input.html" class="test-link completed">Run Test</a>
+            </div>
+            
+            <div class="test-card completed">
+                <h3 class="test-title">Effects System</h3>
+                <p class="test-description">Test explosion animations, effect queuing, and timing management.</p>
+                <ul class="test-features">
+                    <li>Animation queue system</li>
+                    <li>Explosion effects</li>
+                    <li>Timing coordination</li>
+                    <li>Performance optimization</li>
+                </ul>
+                <a href="test-effects.html" class="test-link completed">Run Test</a>
+            </div>
+            
+            <div class="test-card completed">
+                <h3 class="test-title">Scoring System</h3>
+                <p class="test-description">Test Scrabble-based scoring, word bonuses, and score calculations.</p>
+                <ul class="test-features">
+                    <li>Scrabble tile values</li>
+                    <li>Word length bonuses</li>
+                    <li>Real-time scoring</li>
+                    <li>Progress tracking</li>
+                </ul>
+                <a href="test-scoring-playable.html" class="test-link completed">Run Test</a>
+            </div>
+            
+            <div class="test-card completed">
+                <h3 class="test-title">Special Tiles</h3>
+                <p class="test-description">Test all special tile types: Bomb, Ice, Stone, Multiplier, and Hidden tiles.</p>
+                <ul class="test-features">
+                    <li>5 special tile types</li>
+                    <li>Health systems</li>
+                    <li>Multiplier integration</li>
+                    <li>Reveal mechanics</li>
+                </ul>
+                <a href="test-special-tiles-playable.html" class="test-link completed">Run Test</a>
+            </div>
+            
+            <div class="test-card completed">
+                <h3 class="test-title">Ripple Effects</h3>
+                <p class="test-description">Test cascade mechanics, ripple spread, and chain reactions.</p>
+                <ul class="test-features">
+                    <li>Configurable ripple spread</li>
+                    <li>Surge accumulation</li>
+                    <li>Chain reactions</li>
+                    <li>Visual feedback</li>
+                </ul>
+                <a href="test-ripple-effects.html" class="test-link completed">Run Test</a>
+            </div>
+            
+            <div class="test-card completed">
+                <h3 class="test-title">Game Scene & HUD</h3>
+                <p class="test-description">Test complete game interface with HUD, scoring, and responsive design.</p>
+                <ul class="test-features">
+                    <li>Score display with progress bar</li>
+                    <li>Move counter with color coding</li>
+                    <li>Victory/defeat conditions</li>
+                    <li>Responsive layout</li>
+                </ul>
+                <a href="test-ui-hud.html" class="test-link completed">Run Test</a>
+            </div>
+            
+            <!-- Future Tests -->
+            <div class="test-card">
+                <h3 class="test-title">Visual Effects & Animations</h3>
+                <p class="test-description">Test particle effects, smooth animations, and visual polish.</p>
+                <ul class="test-features">
+                    <li>Particle systems</li>
+                    <li>Smooth transitions</li>
+                    <li>Visual feedback</li>
+                    <li>60 FPS performance</li>
+                </ul>
+                <a href="#" class="test-link" onclick="alert('Coming soon!')">Coming Soon</a>
+            </div>
+            
+            <div class="test-card">
+                <h3 class="test-title">Responsive Design</h3>
+                <p class="test-description">Test device optimization, touch controls, and responsive scaling.</p>
+                <ul class="test-features">
+                    <li>Multi-device support</li>
+                    <li>Touch optimization</li>
+                    <li>Responsive scaling</li>
+                    <li>375px+ support</li>
+                </ul>
+                <a href="#" class="test-link" onclick="alert('Coming soon!')">Coming Soon</a>
+            </div>
+            
+            <div class="test-card">
+                <h3 class="test-title">Level Progression</h3>
+                <p class="test-description">Test level management, victory conditions, and progression system.</p>
+                <ul class="test-features">
+                    <li>Victory/failure conditions</li>
+                    <li>Level transitions</li>
+                    <li>Progress persistence</li>
+                    <li>Difficulty scaling</li>
+                </ul>
+                <a href="#" class="test-link" onclick="alert('Coming soon!')">Coming Soon</a>
+            </div>
+        </div>
+        
+        <div class="status-legend">
+            <h3>Status Legend</h3>
+            <div class="legend-items">
+                <div class="legend-item">
+                    <span>✅</span>
+                    <span>Completed - Fully implemented and tested</span>
+                </div>
+                <div class="legend-item">
+                    <span>🚧</span>
+                    <span>In Progress - Currently being developed</span>
+                </div>
+                <div class="legend-item">
+                    <span>⏳</span>
+                    <span>Planned - Scheduled for future development</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Add some interactivity
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add click tracking
+            const testLinks = document.querySelectorAll('.test-link');
+            testLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    if (this.href && !this.href.includes('#')) {
+                        console.log(`Opening test: ${this.href}`);
+                    }
+                });
+            });
+            
+            // Add keyboard navigation
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    // Could add modal close functionality here
+                }
+            });
+            
+            // Log test suite load
+            console.log('Word Match Test Suite loaded');
+            console.log('Available tests:', testLinks.length);
+        });
+    </script>
+</body>
+</html>

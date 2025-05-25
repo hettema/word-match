@@ -57,7 +57,7 @@ class WordValidator {
         try {
             console.log('WordValidator: Loading dictionary from assets/dict.txt...');
             
-            const response = await fetch('./assets/dict.txt');
+            const response = await fetch('/assets/dict.txt?v=' + Date.now());
             
             if (!response.ok) {
                 throw new Error(`Failed to fetch dictionary: ${response.status} ${response.statusText}`);

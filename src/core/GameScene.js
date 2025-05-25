@@ -12,10 +12,13 @@ class GameScene extends Phaser.Scene {
         this.effectsQueue = null;
         this.inputSystem = null;
         this.wordValidator = null;
+        this.scoreSystem = null;
         
         // Game state
         this.gameState = 'playing'; // 'playing', 'animating', 'paused'
         this.currentLevel = 1;
+        this.movesRemaining = 0;
+        this.maxMoves = 0;
         
         // Performance tracking
         this.frameCount = 0;
@@ -131,6 +134,14 @@ class GameScene extends Phaser.Scene {
         this.effectsQueue = new EffectsQueue(this);
         this.registry.set('effectsQueue', this.effectsQueue);
         
+        // Initialize ScoreSystem
+        this.scoreSystem = new ScoreSystem(this);
+        this.registry.set('scoreSystem', this.scoreSystem);
+        
+        // Initialize move tracking
+        this.maxMoves = levelConfig.moves || 20;
+        this.movesRemaining = this.maxMoves;
+        
         // Initialize Grid
         this.grid = new Grid(this, levelConfig);
         this.registry.set('grid', this.grid);
@@ -225,6 +236,16 @@ class GameScene extends Phaser.Scene {
             this.handleSelectionChange([]);
         });
         
+        // ScoreSystem events
+        this.events.on('scoreUpdated', (scoreData) => {
+            this.updateHUD();
+        });
+        
+        this.events.on('wordScored', (scoreData) => {
+            console.log(`Word "${scoreData.word}" scored ${scoreData.totalScore} points`);
+            this.updateHUD();
+        });
+        
         // Screen resize handling - disabled to prevent spam
         // TODO: Fix resize loop issue in future iteration
         // this.scale.on('resize', (gameSize) => {
@@ -241,23 +262,17 @@ class GameScene extends Phaser.Scene {
         const settings = this.registry.get('settings');
         const uiConfig = settings.ui || {};
         
+        // Create HUD container (top area)
+        this.createHUD();
+        
         // Create debug info (top-left)
         this.debugText = this.add.text(10, 10, '', {
-            fontSize: '14px',
+            fontSize: '12px',
             fontFamily: 'Arial, sans-serif',
             color: '#2c3e50',
             backgroundColor: 'rgba(255, 255, 255, 0.8)',
-            padding: { x: 8, y: 4 }
+            padding: { x: 6, y: 3 }
         });
-        
-        // Create game info (top-right)
-        this.gameInfoText = this.add.text(this.scale.width - 10, 10, '', {
-            fontSize: '16px',
-            fontFamily: 'Arial, sans-serif',
-            color: '#2c3e50',
-            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-            padding: { x: 10, y: 6 }
-        }).setOrigin(1, 0);
         
         // Create status text (bottom-center)
         this.statusText = this.add.text(this.scale.width / 2, this.scale.height - 30, 'Ready to play!', {
@@ -269,6 +284,95 @@ class GameScene extends Phaser.Scene {
         
         this.updateUI();
         console.log('UI created');
+    }
+    
+    /**
+     * Create the main HUD (Heads-Up Display)
+     */
+    createHUD() {
+        const hudY = 15;
+        const hudHeight = 80;
+        
+        // HUD Background
+        this.hudBackground = this.add.rectangle(
+            this.scale.width / 2,
+            hudY + hudHeight / 2,
+            this.scale.width - 20,
+            hudHeight,
+            0x2c3e50,
+            0.9
+        ).setStrokeStyle(2, 0x34495e);
+        
+        // Score Section (left)
+        this.scoreLabel = this.add.text(30, hudY + 15, 'SCORE', {
+            fontSize: '14px',
+            fontFamily: 'Arial, sans-serif',
+            color: '#ecf0f1',
+            fontStyle: 'bold'
+        });
+        
+        this.scoreText = this.add.text(30, hudY + 35, '0', {
+            fontSize: '24px',
+            fontFamily: 'Arial, sans-serif',
+            color: '#f39c12',
+            fontStyle: 'bold'
+        });
+        
+        this.targetText = this.add.text(30, hudY + 60, 'Target: 0', {
+            fontSize: '12px',
+            fontFamily: 'Arial, sans-serif',
+            color: '#bdc3c7'
+        });
+        
+        // Progress Bar
+        const progressBarWidth = 200;
+        const progressBarX = 150;
+        const progressBarY = hudY + 45;
+        
+        this.progressBarBg = this.add.rectangle(
+            progressBarX + progressBarWidth / 2,
+            progressBarY,
+            progressBarWidth,
+            8,
+            0x34495e
+        );
+        
+        this.progressBar = this.add.rectangle(
+            progressBarX,
+            progressBarY,
+            0,
+            8,
+            0x27ae60
+        ).setOrigin(0, 0.5);
+        
+        // Moves Section (center-right)
+        this.movesLabel = this.add.text(this.scale.width / 2 + 50, hudY + 15, 'MOVES', {
+            fontSize: '14px',
+            fontFamily: 'Arial, sans-serif',
+            color: '#ecf0f1',
+            fontStyle: 'bold'
+        });
+        
+        this.movesText = this.add.text(this.scale.width / 2 + 50, hudY + 35, '0', {
+            fontSize: '24px',
+            fontFamily: 'Arial, sans-serif',
+            color: '#3498db',
+            fontStyle: 'bold'
+        });
+        
+        this.movesSubText = this.add.text(this.scale.width / 2 + 50, hudY + 60, 'remaining', {
+            fontSize: '12px',
+            fontFamily: 'Arial, sans-serif',
+            color: '#bdc3c7'
+        });
+        
+        // Level Section (right)
+        this.levelText = this.add.text(this.scale.width - 40, hudY + 35, 'LEVEL 1', {
+            fontSize: '16px',
+            fontFamily: 'Arial, sans-serif',
+            color: '#ecf0f1',
+            fontStyle: 'bold'
+        }).setOrigin(1, 0.5);
     }
     
     /**
@@ -327,17 +431,31 @@ class GameScene extends Phaser.Scene {
     handleWordSubmission(wordData) {
         const { word, tiles } = wordData;
         
+        // Don't process if game is paused or animating
+        if (this.gameState !== 'playing') {
+            return;
+        }
+        
         // Validate word using WordValidator
         const isValid = this.wordValidator && this.wordValidator.isValid(word);
         
         console.log(`Word submitted: "${word}" (${isValid ? 'valid' : 'invalid'})`);
         
         if (isValid && tiles.length > 0) {
+            // Use a move
+            this.movesRemaining--;
+            
+            // Score the word
+            const points = this.scoreSystem.scoreWord(tiles);
+            
             // Trigger ripple effects for valid word (includes explosion + cascades)
             this.effectsQueue.triggerWordRipple(tiles);
             
-            this.statusText.setText(`Great word: "${word.toUpperCase()}"!`);
+            this.statusText.setText(`Great word: "${word.toUpperCase()}" (+${points} points)!`);
             this.statusText.setColor('#27ae60');
+            
+            // Check for game over conditions
+            this.checkGameOver();
             
         } else {
             this.statusText.setText(tiles.length === 0 ? 'Select some tiles first!' : `"${word.toUpperCase()}" is not a valid word`);
@@ -346,6 +464,97 @@ class GameScene extends Phaser.Scene {
             // Clear invalid selection
             this.grid.clearSelection();
         }
+    }
+    
+    /**
+     * Check for game over conditions
+     */
+    checkGameOver() {
+        const hasWon = this.scoreSystem.hasReachedTarget();
+        const hasLost = this.movesRemaining <= 0 && !hasWon;
+        
+        if (hasWon) {
+            this.handleVictory();
+        } else if (hasLost) {
+            this.handleDefeat();
+        }
+        
+        // Update HUD regardless
+        this.updateHUD();
+    }
+    
+    /**
+     * Handle victory condition
+     */
+    handleVictory() {
+        this.setGameState('animating'); // Prevent further input
+        this.statusText.setText('🎉 LEVEL COMPLETE! 🎉');
+        this.statusText.setColor('#27ae60');
+        
+        // Show victory overlay
+        if (!this.victoryOverlay) {
+            this.victoryOverlay = this.add.rectangle(
+                this.scale.width / 2,
+                this.scale.height / 2,
+                this.scale.width,
+                this.scale.height,
+                0x27ae60,
+                0.8
+            ).setDepth(600);
+            
+            this.victoryText = this.add.text(
+                this.scale.width / 2,
+                this.scale.height / 2,
+                `🎉 LEVEL ${this.currentLevel} COMPLETE! 🎉\n\nScore: ${this.scoreSystem.getCurrentScore()}\nMoves Used: ${this.maxMoves - this.movesRemaining}`,
+                {
+                    fontSize: '28px',
+                    fontFamily: 'Arial, sans-serif',
+                    color: '#ffffff',
+                    align: 'center',
+                    fontStyle: 'bold'
+                }
+            ).setOrigin(0.5, 0.5).setDepth(601);
+        }
+        
+        this.victoryOverlay.setVisible(true);
+        this.victoryText.setVisible(true);
+    }
+    
+    /**
+     * Handle defeat condition
+     */
+    handleDefeat() {
+        this.setGameState('animating'); // Prevent further input
+        this.statusText.setText('💀 GAME OVER 💀');
+        this.statusText.setColor('#e74c3c');
+        
+        // Show defeat overlay
+        if (!this.defeatOverlay) {
+            this.defeatOverlay = this.add.rectangle(
+                this.scale.width / 2,
+                this.scale.height / 2,
+                this.scale.width,
+                this.scale.height,
+                0xe74c3c,
+                0.8
+            ).setDepth(600);
+            
+            this.defeatText = this.add.text(
+                this.scale.width / 2,
+                this.scale.height / 2,
+                `💀 GAME OVER 💀\n\nScore: ${this.scoreSystem.getCurrentScore()}\nTarget: ${this.scoreSystem.getTargetScore()}\n\nTry Again!`,
+                {
+                    fontSize: '28px',
+                    fontFamily: 'Arial, sans-serif',
+                    color: '#ffffff',
+                    align: 'center',
+                    fontStyle: 'bold'
+                }
+            ).setOrigin(0.5, 0.5).setDepth(601);
+        }
+        
+        this.defeatOverlay.setVisible(true);
+        this.defeatText.setVisible(true);
     }
     
     /**
@@ -435,10 +644,6 @@ class GameScene extends Phaser.Scene {
                 this.grid.clearSelection();
                 console.log('DEBUG: Input disabled - state changed to animating');
                 break;
-            case 'paused':
-                this.inputSystem.setEnabled(false);
-                console.log('DEBUG: Input disabled - state changed to paused');
-                break;
         }
         
         console.log(`DEBUG: Game state changed: ${oldState} -> ${newState}`);
@@ -497,7 +702,14 @@ class GameScene extends Phaser.Scene {
      * Update UI elements
      */
     updateUI() {
-        // Update debug info
+        this.updateDebugInfo();
+        this.updateHUD();
+    }
+    
+    /**
+     * Update debug information
+     */
+    updateDebugInfo() {
         const effectsStatus = this.effectsQueue ? this.effectsQueue.getStatus() : {};
         const gridStats = this.grid ? this.grid.getStats() : {};
         const validatorStats = this.wordValidator ? this.wordValidator.getStats() : {};
@@ -510,14 +722,50 @@ class GameScene extends Phaser.Scene {
             `Tiles: ${gridStats.totalTiles || 0}`,
             `Dict: ${validatorStats.loaded ? validatorStats.wordCount + ' words' : 'Loading...'}`
         ].join('\n'));
+    }
+    
+    /**
+     * Update HUD elements
+     */
+    updateHUD() {
+        if (!this.scoreSystem) return;
         
-        // Update game info
-        const levelConfig = this.registry.get('levelConfig');
-        this.gameInfoText.setText([
-            `Level: ${this.currentLevel}`,
-            `Target: ${levelConfig?.targetScore || 0}`,
-            `Moves: ${levelConfig?.maxMoves || 0}`
-        ].join('\n'));
+        const currentScore = this.scoreSystem.getCurrentScore();
+        const targetScore = this.scoreSystem.getTargetScore();
+        const progress = this.scoreSystem.getProgress();
+        
+        // Update score display
+        this.scoreText.setText(currentScore.toString());
+        this.targetText.setText(`Target: ${targetScore}`);
+        
+        // Update progress bar
+        const progressBarWidth = 200;
+        const progressWidth = (progress / 100) * progressBarWidth;
+        this.progressBar.setSize(progressWidth, 8);
+        
+        // Change progress bar color based on progress
+        if (progress >= 100) {
+            this.progressBar.setFillStyle(0x27ae60); // Green when complete
+        } else if (progress >= 75) {
+            this.progressBar.setFillStyle(0xf39c12); // Orange when close
+        } else {
+            this.progressBar.setFillStyle(0x3498db); // Blue for normal progress
+        }
+        
+        // Update moves display
+        this.movesText.setText(this.movesRemaining.toString());
+        
+        // Change moves color based on remaining moves
+        if (this.movesRemaining <= 3) {
+            this.movesText.setColor('#e74c3c'); // Red when low
+        } else if (this.movesRemaining <= 6) {
+            this.movesText.setColor('#f39c12'); // Orange when medium
+        } else {
+            this.movesText.setColor('#3498db'); // Blue when plenty
+        }
+        
+        // Update level display
+        this.levelText.setText(`LEVEL ${this.currentLevel}`);
     }
     
     /**
@@ -557,6 +805,9 @@ class GameScene extends Phaser.Scene {
         }
         if (this.inputSystem) {
             this.inputSystem.destroy();
+        }
+        if (this.scoreSystem) {
+            this.scoreSystem.destroy();
         }
         
         console.log('GameScene destroyed');

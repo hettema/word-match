@@ -151,13 +151,13 @@
 
     <!-- Load game scripts -->
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
-    <script src="src/core/Tile.js?v=9"></script>
-    <script src="src/core/Grid.js?v=9"></script>
-    <script src="src/systems/ScoreSystem.js?v=9"></script>
-    <script src="src/systems/WordValidator.js?v=9"></script>
-    <script src="src/systems/InputSystem.js?v=9"></script>
-    <script src="src/systems/EffectsQueue.js?v=9"></script>
-    <script src="src/utils/LevelLoader.js?v=9"></script>
+    <script src="../src/core/Tile.js?v=9"></script>
+    <script src="../src/core/Grid.js?v=9"></script>
+    <script src="../src/systems/ScoreSystem.js?v=9"></script>
+    <script src="../src/systems/WordValidator.js?v=9"></script>
+    <script src="../src/systems/InputSystem.js?v=9"></script>
+    <script src="../src/systems/EffectsQueue.js?v=9"></script>
+    <script src="../src/utils/LevelLoader.js?v=9"></script>
 
     <script>
         let game;
@@ -195,8 +195,8 @@
 
             preload() {
                 // Load configuration
-                this.load.json('settings', 'config/settings.json');
-                this.load.json('levels', 'config/levels.json');
+                this.load.json('settings', '../config/settings.json');
+                this.load.json('levels', '../config/levels.json');
             }
 
             create() {
