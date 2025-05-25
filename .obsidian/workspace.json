@@ -177,6 +177,10 @@
   },
   "active": "dba328133ee3b571",
   "lastOpenFiles": [
+    "debug-bottom-row.js",
+    "test-effects.html",
+    "src/core/GameScene.js",
+    "src/systems/EffectsQueue.js",
     "test-input.html",
     "src/systems/InputSystem.js",
     "src/systems",
@@ -184,10 +188,6 @@
     "src/core/Grid.js",
     "src/core/Tile.js",
     "src/core",
-    "test-config.html",
-    "src/utils/LevelLoader.js",
-    "src/utils",
-    "src",
     "kanban.md"
   ]
 }

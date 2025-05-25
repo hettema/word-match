@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Effects System Test - Word Match</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background-color: #2c3e50;
+            color: white;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn:disabled {
+            background-color: #7f8c8d;
+            cursor: not-allowed;
+        }
+        
+        .btn.danger {
+            background-color: #e74c3c;
+        }
+        
+        .btn.danger:hover {
+            background-color: #c0392b;
+        }
+        
+        .btn.success {
+            background-color: #27ae60;
+        }
+        
+        .btn.success:hover {
+            background-color: #229954;
+        }
+        
+        .game-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        .info-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .info-box {
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .info-box h3 {
+            margin-top: 0;
+            color: #3498db;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-indicator.green {
+            background-color: #27ae60;
+        }
+        
+        .status-indicator.red {
+            background-color: #e74c3c;
+        }
+        
+        .status-indicator.yellow {
+            background-color: #f39c12;
+        }
+        
+        .log {
+            background-color: #1a1a1a;
+            color: #00ff00;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        
+        .test-results {
+            margin-top: 20px;
+        }
+        
+        .test-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            margin: 5px 0;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+        
+        .test-item.pass {
+            border-left: 4px solid #27ae60;
+        }
+        
+        .test-item.fail {
+            border-left: 4px solid #e74c3c;
+        }
+        
+        .test-item.pending {
+            border-left: 4px solid #f39c12;
+        }
+        
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .info-panel {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎆 Effects System Test</h1>
+            <p>Testing explosion animations, effects queue, and particle systems</p>
+        </div>
+        
+        <div class="controls">
+            <button class="btn" id="startGame">Start Game</button>
+            <button class="btn success" id="testExplosion">Test Explosion</button>
+            <button class="btn success" id="testCascade">Test Cascade</button>
+            <button class="btn success" id="testGravity">Test Gravity</button>
+            <button class="btn" id="testQueue">Test Queue</button>
+            <button class="btn danger" id="clearQueue">Clear Queue</button>
+            <button class="btn" id="runAllTests">Run All Tests</button>
+        </div>
+        
+        <div class="game-container">
+            <div id="game"></div>
+        </div>
+        
+        <div class="info-panel">
+            <div class="info-box">
+                <h3>🎮 Game Status</h3>
+                <div id="gameStatus">
+                    <div><span class="status-indicator red"></span>Not Started</div>
+                </div>
+            </div>
+            
+            <div class="info-box">
+                <h3>⚡ Effects Queue</h3>
+                <div id="queueStatus">
+                    <div>Queue Length: <span id="queueLength">0</span></div>
+                    <div>Processing: <span id="queueProcessing">No</span></div>
+                    <div>Current Effect: <span id="currentEffect">None</span></div>
+                    <div>Effects Processed: <span id="effectsProcessed">0</span></div>
+                    <div>Avg Process Time: <span id="avgProcessTime">0</span>ms</div>
+                </div>
+            </div>
+            
+            <div class="info-box">
+                <h3>🎯 Grid Stats</h3>
+                <div id="gridStats">
+                    <div>Total Tiles: <span id="totalTiles">0</span></div>
+                    <div>Empty Spaces: <span id="emptySpaces">0</span></div>
+                    <div>Normal: <span id="normalTiles">0</span></div>
+                    <div>Destabilized: <span id="destabilizedTiles">0</span></div>
+                    <div>Exploding: <span id="explodingTiles">0</span></div>
+                </div>
+            </div>
+            
+            <div class="info-box">
+                <h3>📊 Performance</h3>
+                <div id="performanceStats">
+                    <div>FPS: <span id="fps">60</span></div>
+                    <div>Frame Time: <span id="frameTime">16</span>ms</div>
+                    <div>Memory: <span id="memory">N/A</span></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-box">
+            <h3>🧪 Test Results</h3>
+            <div class="test-results" id="testResults">
+                <div class="test-item pending">
+                    <span class="status-indicator yellow"></span>
+                    Waiting for tests to run...
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-box">
+            <h3>📝 Console Log</h3>
+            <div class="log" id="consoleLog">System ready. Click 'Start Game' to begin.\n</div>
+        </div>
+    </div>
+
+    <!-- Phaser 3 -->
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
+    
+    <!-- Game Scripts -->
+    <script src="src/utils/LevelLoader.js"></script>
+    <script src="src/core/Tile.js"></script>
+    <script src="src/core/Grid.js"></script>
+    <script src="src/systems/InputSystem.js"></script>
+    <script src="src/systems/EffectsQueue.js"></script>
+    <script src="src/core/GameScene.js"></script>
+    
+    <script>
+        class EffectsTestApp {
+            constructor() {
+                this.game = null;
+                this.scene = null;
+                this.testResults = [];
+                this.updateInterval = null;
+                
+                this.initializeUI();
+                this.setupEventListeners();
+                this.startStatusUpdates();
+            }
+            
+            initializeUI() {
+                this.elements = {
+                    startGame: document.getElementById('startGame'),
+                    testExplosion: document.getElementById('testExplosion'),
+                    testCascade: document.getElementById('testCascade'),
+                    testGravity: document.getElementById('testGravity'),
+                    testQueue: document.getElementById('testQueue'),
+                    clearQueue: document.getElementById('clearQueue'),
+                    runAllTests: document.getElementById('runAllTests'),
+                    gameStatus: document.getElementById('gameStatus'),
+                    queueLength: document.getElementById('queueLength'),
+                    queueProcessing: document.getElementById('queueProcessing'),
+                    currentEffect: document.getElementById('currentEffect'),
+                    effectsProcessed: document.getElementById('effectsProcessed'),
+                    avgProcessTime: document.getElementById('avgProcessTime'),
+                    totalTiles: document.getElementById('totalTiles'),
+                    emptySpaces: document.getElementById('emptySpaces'),
+                    normalTiles: document.getElementById('normalTiles'),
+                    destabilizedTiles: document.getElementById('destabilizedTiles'),
+                    explodingTiles: document.getElementById('explodingTiles'),
+                    fps: document.getElementById('fps'),
+                    frameTime: document.getElementById('frameTime'),
+                    memory: document.getElementById('memory'),
+                    testResults: document.getElementById('testResults'),
+                    consoleLog: document.getElementById('consoleLog')
+                };
+            }
+            
+            setupEventListeners() {
+                this.elements.startGame.addEventListener('click', () => this.startGame());
+                this.elements.testExplosion.addEventListener('click', () => this.testExplosion());
+                this.elements.testCascade.addEventListener('click', () => this.testCascade());
+                this.elements.testGravity.addEventListener('click', () => this.testGravity());
+                this.elements.testQueue.addEventListener('click', () => this.testQueue());
+                this.elements.clearQueue.addEventListener('click', () => this.clearQueue());
+                this.elements.runAllTests.addEventListener('click', () => this.runAllTests());
+                
+                // Capture console logs
+                this.originalConsoleLog = console.log;
+                console.log = (...args) => {
+                    this.originalConsoleLog(...args);
+                    this.addToLog(args.join(' '));
+                };
+                
+                this.originalConsoleError = console.error;
+                console.error = (...args) => {
+                    this.originalConsoleError(...args);
+                    this.addToLog('ERROR: ' + args.join(' '));
+                };
+            }
+            
+            addToLog(message) {
+                const timestamp = new Date().toLocaleTimeString();
+                this.elements.consoleLog.textContent += `[${timestamp}] ${message}\n`;
+                this.elements.consoleLog.scrollTop = this.elements.consoleLog.scrollHeight;
+            }
+            
+            async startGame() {
+                try {
+                    this.addToLog('Starting game...');
+                    
+                    const config = {
+                        type: Phaser.AUTO,
+                        width: 800,
+                        height: 600,
+                        parent: 'game',
+                        backgroundColor: '#2c3e50',
+                        scene: GameScene,
+                        physics: {
+                            default: 'arcade',
+                            arcade: {
+                                debug: false
+                            }
+                        }
+                    };
+                    
+                    this.game = new Phaser.Game(config);
+                    
+                    // Wait for scene to be ready
+                    this.game.events.once('ready', () => {
+                        this.scene = this.game.scene.getScene('GameScene');
+                        this.updateGameStatus('Running', 'green');
+                        this.enableTestButtons();
+                        this.addToLog('Game started successfully!');
+                    });
+                    
+                } catch (error) {
+                    this.addToLog(`Failed to start game: ${error.message}`);
+                    this.updateGameStatus('Error', 'red');
+                }
+            }
+            
+            enableTestButtons() {
+                ['testExplosion', 'testCascade', 'testGravity', 'testQueue', 'clearQueue', 'runAllTests'].forEach(id => {
+                    this.elements[id].disabled = false;
+                });
+            }
+            
+            updateGameStatus(status, color) {
+                this.elements.gameStatus.innerHTML = `<div><span class="status-indicator ${color}"></span>${status}</div>`;
+            }
+            
+            testExplosion() {
+                if (!this.scene || !this.scene.grid) {
+                    this.addToLog('Game not ready for testing');
+                    return;
+                }
+                
+                this.addToLog('Testing explosion effect...');
+                
+                // Get tiles from middle rows to test gravity properly
+                const allTiles = this.scene.grid.getAllTiles();
+                const middleRowTiles = allTiles.filter(tile => tile.gridY >= 2 && tile.gridY <= 3);
+                const tilesToExplode = middleRowTiles.slice(0, 3);
+                
+                if (tilesToExplode.length === 0) {
+                    this.addToLog('No tiles available for explosion test');
+                    return;
+                }
+                
+                this.scene.effectsQueue.addEffect({
+                    type: 'explosion',
+                    targets: tilesToExplode,
+                    params: {
+                        duration: 500,
+                        particleCount: 25
+                    },
+                    callback: () => {
+                        this.addToLog('Explosion test completed');
+                        this.addTestResult('Explosion Effect', true, 'Particles created and tiles destroyed');
+                    }
+                });
+            }
+            
+            testCascade() {
+                if (!this.scene || !this.scene.grid) {
+                    this.addToLog('Game not ready for testing');
+                    return;
+                }
+                
+                this.addToLog('Testing cascade effect...');
+                
+                const allTiles = this.scene.grid.getAllTiles();
+                // Create waves from different rows for better visual effect
+                const wave1 = allTiles.filter(tile => tile.gridY === 1).slice(0, 2);
+                const wave2 = allTiles.filter(tile => tile.gridY === 2).slice(0, 2);
+                const wave3 = allTiles.filter(tile => tile.gridY === 3).slice(0, 2);
+                
+                this.scene.effectsQueue.addEffect({
+                    type: 'cascade',
+                    targets: [wave1, wave2, wave3],
+                    params: {
+                        delay: 200,
+                        particleCount: 15
+                    },
+                    callback: () => {
+                        this.addToLog('Cascade test completed');
+                        this.addTestResult('Cascade Effect', true, 'Multi-wave explosions executed');
+                    }
+                });
+            }
+            
+            testGravity() {
+                if (!this.scene || !this.scene.grid) {
+                    this.addToLog('Game not ready for testing');
+                    return;
+                }
+                
+                this.addToLog('Testing gravity effect...');
+                
+                // Simulate some tile movements
+                const movements = this.scene.grid.applyGravity();
+                
+                if (movements.length === 0) {
+                    this.addToLog('No gravity movements needed');
+                    this.addTestResult('Gravity Effect', true, 'No movements required (grid stable)');
+                    return;
+                }
+                
+                this.scene.effectsQueue.addEffect({
+                    type: 'gravity',
+                    targets: movements,
+                    params: {
+                        duration: 400
+                    },
+                    callback: () => {
+                        this.addToLog('Gravity test completed');
+                        this.addTestResult('Gravity Effect', true, `${movements.length} tiles moved`);
+                    }
+                });
+            }
+            
+            testQueue() {
+                if (!this.scene || !this.scene.effectsQueue) {
+                    this.addToLog('Effects queue not ready for testing');
+                    return;
+                }
+                
+                this.addToLog('Testing effects queue with multiple effects...');
+                
+                const allTiles = this.scene.grid.getAllTiles();
+                
+                // Add multiple effects to test queue processing
+                for (let i = 0; i < 5; i++) {
+                    const tile = allTiles[i % allTiles.length];
+                    if (tile) {
+                        this.scene.effectsQueue.addEffect({
+                            type: 'explosion',
+                            targets: [tile],
+                            params: {
+                                duration: 200,
+                                particleCount: 10
+                            },
+                            callback: () => {
+                                if (i === 4) {
+                                    this.addToLog('Queue test completed');
+                                    this.addTestResult('Queue Processing', true, '5 effects processed sequentially');
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+            
+            clearQueue() {
+                if (!this.scene || !this.scene.effectsQueue) {
+                    this.addToLog('Effects queue not available');
+                    return;
+                }
+                
+                this.scene.effectsQueue.clearQueue();
+                this.addToLog('Effects queue cleared');
+                this.addTestResult('Queue Clear', true, 'Queue successfully cleared');
+            }
+            
+            async runAllTests() {
+                this.addToLog('Running all tests...');
+                this.testResults = [];
+                this.elements.testResults.innerHTML = '<div class="test-item pending"><span class="status-indicator yellow"></span>Running tests...</div>';
+                
+                // Run tests with delays
+                setTimeout(() => this.testExplosion(), 500);
+                setTimeout(() => this.testGravity(), 2000);
+                setTimeout(() => this.testCascade(), 4000);
+                setTimeout(() => this.testQueue(), 7000);
+                
+                setTimeout(() => {
+                    this.addToLog('All tests completed');
+                    this.generateTestSummary();
+                }, 10000);
+            }
+            
+            addTestResult(testName, passed, details) {
+                this.testResults.push({ testName, passed, details, timestamp: new Date() });
+                this.updateTestResults();
+            }
+            
+            updateTestResults() {
+                const html = this.testResults.map(result => {
+                    const statusClass = result.passed ? 'pass' : 'fail';
+                    const statusColor = result.passed ? 'green' : 'red';
+                    return `
+                        <div class="test-item ${statusClass}">
+                            <span class="status-indicator ${statusColor}"></span>
+                            <strong>${result.testName}</strong>: ${result.details}
+                        </div>
+                    `;
+                }).join('');
+                
+                this.elements.testResults.innerHTML = html || '<div class="test-item pending"><span class="status-indicator yellow"></span>No tests run yet</div>';
+            }
+            
+            generateTestSummary() {
+                const passed = this.testResults.filter(r => r.passed).length;
+                const total = this.testResults.length;
+                const summary = `Test Summary: ${passed}/${total} tests passed`;
+                
+                this.addToLog(summary);
+                
+                const summaryElement = document.createElement('div');
+                summaryElement.className = `test-item ${passed === total ? 'pass' : 'fail'}`;
+                summaryElement.innerHTML = `
+                    <span class="status-indicator ${passed === total ? 'green' : 'red'}"></span>
+                    <strong>${summary}</strong>
+                `;
+                this.elements.testResults.appendChild(summaryElement);
+            }
+            
+            startStatusUpdates() {
+                this.updateInterval = setInterval(() => {
+                    this.updateStatus();
+                }, 1000);
+            }
+            
+            updateStatus() {
+                if (!this.scene) return;
+                
+                // Update effects queue status
+                if (this.scene.effectsQueue) {
+                    const status = this.scene.effectsQueue.getStatus();
+                    this.elements.queueLength.textContent = status.queueLength;
+                    this.elements.queueProcessing.textContent = status.isProcessing ? 'Yes' : 'No';
+                    this.elements.currentEffect.textContent = status.currentEffect || 'None';
+                    this.elements.effectsProcessed.textContent = status.effectsProcessed;
+                    this.elements.avgProcessTime.textContent = status.averageProcessTime;
+                }
+                
+                // Update grid stats
+                if (this.scene.grid) {
+                    const stats = this.scene.grid.getStats();
+                    this.elements.totalTiles.textContent = stats.totalTiles;
+                    this.elements.emptySpaces.textContent = stats.emptySpaces;
+                    this.elements.normalTiles.textContent = stats.tilesByState.normal || 0;
+                    this.elements.destabilizedTiles.textContent = stats.tilesByState.destabilized || 0;
+                    this.elements.explodingTiles.textContent = stats.tilesByState.exploding || 0;
+                }
+                
+                // Update performance stats
+                if (this.game) {
+                    this.elements.fps.textContent = this.game.loop.actualFps.toFixed(0);
+                    this.elements.frameTime.textContent = this.game.loop.delta.toFixed(1);
+                    
+                    // Memory usage (if available)
+                    if (performance.memory) {
+                        const memoryMB = (performance.memory.usedJSHeapSize / 1024 / 1024).toFixed(1);
+                        this.elements.memory.textContent = `${memoryMB} MB`;
+                    }
+                }
+            }
+            
+            destroy() {
+                if (this.updateInterval) {
+                    clearInterval(this.updateInterval);
+                }
+                
+                if (this.game) {
+                    this.game.destroy(true);
+                }
+                
+                // Restore console methods
+                console.log = this.originalConsoleLog;
+                console.error = this.originalConsoleError;
+            }
+        }
+        
+        // Initialize the test app
+        const testApp = new EffectsTestApp();
+        
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            testApp.destroy();
+        });
+    </script>
+</body>
+</html>

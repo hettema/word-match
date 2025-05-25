@@ -41,11 +41,16 @@
     "chainBonusBase": 100
   },
   "effects": {
+    "animationSpeed": 1.0,
     "particleCount": 20,
+    "explosionDuration": 500,
     "explosionRadius": 80,
     "rippleSpeed": 300,
     "shakeIntensity": 5,
-    "flashDuration": 150
+    "flashDuration": 150,
+    "gravityDuration": 300,
+    "spawnDuration": 200,
+    "staggerDelay": 50
   },
   "audio": {
     "enabled": true,

@@ -40,10 +40,25 @@ class InputSystem {
         
         // Hit zone expansion for better diagonal selection
         const tileSize = this.scene.registry.get('settings')?.display?.tileSize || 64;
-        this.expandedHitZone = tileSize * 0.7; // 70% of tile size as radius
+        this.expandedHitZone = (tileSize / 2) + this.touchTolerance; // Match getTileAt hit detection
+        
+        // Input state management
+        this.enabled = true;
         
         this.setupInput();
         this.createTracingLine();
+    }
+    
+    /**
+     * Enable or disable input system
+     * @param {boolean} enabled - Whether input should be enabled
+     */
+    setEnabled(enabled) {
+        this.enabled = enabled;
+        if (!enabled) {
+            // Clear any active tracing when disabled
+            this.endTrace();
+        }
     }
     
     /**
@@ -76,9 +91,16 @@ class InputSystem {
      * @param {Phaser.Input.Pointer} pointer - Pointer event
      */
     startTrace(pointer) {
-        // Don't start tracing if game is animating
+        // Don't start tracing if input is disabled or game is animating
+        if (!this.enabled) return;
+        
         const gameState = this.scene.registry.get('gameState');
         if (gameState && gameState.isAnimating) {
+            return;
+        }
+        
+        // Also check scene game state as fallback
+        if (this.scene.gameState === 'animating') {
             return;
         }
         
@@ -88,6 +110,12 @@ class InputSystem {
             this.selectedTiles = [tile];
             this.currentWord = tile.letter;
             this.linePoints = [{ x: tile.worldX, y: tile.worldY }];
+            
+            // Initialize smoothed pointer to current position
+            this.smoothPointer.x = pointer.x;
+            this.smoothPointer.y = pointer.y;
+            this.lastPointerPosition.x = pointer.x;
+            this.lastPointerPosition.y = pointer.y;
             
             // Visual feedback
             tile.setSelected(true);
@@ -187,10 +215,16 @@ class InputSystem {
      */
     getTileAt(worldX, worldY) {
         const gridPos = this.grid.worldToGridPosition(worldX, worldY);
-        if (!gridPos) return null;
+        if (!gridPos) {
+            console.log('DEBUG: worldToGridPosition returned null for', worldX, worldY);
+            return null;
+        }
         
         const tile = this.grid.getTileAt(gridPos.x, gridPos.y);
-        if (!tile) return null;
+        if (!tile) {
+            console.log('DEBUG: No tile found at grid position', gridPos.x, gridPos.y);
+            return null;
+        }
         
         // Check if pointer is within tile bounds (with tolerance for touch)
         const dx = Math.abs(worldX - tile.worldX);
@@ -198,10 +232,13 @@ class InputSystem {
         const tileSize = this.scene.registry.get('settings')?.display?.tileSize || 64;
         const maxDistance = (tileSize / 2) + this.touchTolerance;
         
+        console.log('DEBUG: Tile bounds check - dx:', dx, 'dy:', dy, 'maxDistance:', maxDistance, 'tile at:', tile.gridX, tile.gridY, 'canBeSelected:', tile.canBeSelected());
+        
         if (dx <= maxDistance && dy <= maxDistance) {
             return tile;
         }
         
+        console.log('DEBUG: Tile outside bounds - rejecting');
         return null;
     }
     
