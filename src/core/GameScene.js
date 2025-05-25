@@ -246,6 +246,56 @@ class GameScene extends Phaser.Scene {
             this.updateHUD();
         });
         
+        // Advanced scoring events
+        this.events.on('cascadeStarted', (cascadeData) => {
+            console.log('Cascade sequence started');
+            this.statusText.setText('Cascade starting...');
+            this.statusText.setColor('#3498db');
+        });
+        
+        this.events.on('chainReaction', (chainData) => {
+            console.log(`Chain reaction ${chainData.chainCount}: ${chainData.tilesExploded} tiles exploded`);
+            
+            // Create chain reaction popup at screen center
+            const centerX = this.scale.width / 2;
+            const centerY = this.scale.height / 2;
+            
+            this.scoreSystem.createChainBonusPopup(
+                chainData.chainCount,
+                0, // Bonus calculated at end
+                centerX,
+                centerY - 50
+            );
+        });
+        
+        this.events.on('cascadeCompleted', (cascadeData) => {
+            console.log(`Cascade completed: ${cascadeData.chainCount} chains, ${cascadeData.finalBonus} bonus points`);
+            
+            if (cascadeData.finalBonus > 0) {
+                // Create final cascade bonus popup
+                const centerX = this.scale.width / 2;
+                const centerY = this.scale.height / 2;
+                
+                this.scoreSystem.createScorePopup(
+                    cascadeData.finalBonus,
+                    centerX,
+                    centerY,
+                    {
+                        color: '#e74c3c',
+                        fontSize: 32,
+                        duration: 2000,
+                        isBonus: true
+                    }
+                );
+                
+                this.statusText.setText(`Amazing cascade! +${cascadeData.finalBonus} bonus points!`);
+                this.statusText.setColor('#e74c3c');
+            } else {
+                this.statusText.setText('Ready for next word!');
+                this.statusText.setColor('#2c3e50');
+            }
+        });
+        
         // Screen resize handling - disabled to prevent spam
         // TODO: Fix resize loop issue in future iteration
         // this.scale.on('resize', (gameSize) => {
@@ -445,8 +495,23 @@ class GameScene extends Phaser.Scene {
             // Use a move
             this.movesRemaining--;
             
-            // Score the word
-            const points = this.scoreSystem.scoreWord(tiles);
+            // Score the word using cascade scoring
+            const points = this.scoreSystem.scoreCascadeWord(tiles);
+            
+            // Create score popup animation at the center of the word
+            const centerTile = tiles[Math.floor(tiles.length / 2)];
+            if (centerTile) {
+                this.scoreSystem.createScorePopup(
+                    points,
+                    centerTile.worldX,
+                    centerTile.worldY,
+                    {
+                        color: '#27ae60',
+                        fontSize: 28,
+                        isBonus: tiles.some(t => t.type === TILE_TYPES.MULTIPLIER)
+                    }
+                );
+            }
             
             // Trigger ripple effects for valid word (includes explosion + cascades)
             this.effectsQueue.triggerWordRipple(tiles);

@@ -1,6 +1,6 @@
 /**
- * ScoreSystem.js - Base scoring system implementation
- * Handles Scrabble-based tile values, word length bonuses, and score calculations
+ * ScoreSystem.js - Advanced scoring system implementation
+ * Handles Scrabble-based tile values, word length bonuses, multipliers, chain bonuses, and cascade scoring
  */
 
 class ScoreSystem {
@@ -15,6 +15,12 @@ class ScoreSystem {
         this.settings = null;
         this.levelConfig = null;
         this.tileValues = null;
+        
+        // Advanced scoring tracking
+        this.cascadeChainLength = 0;
+        this.currentCascadeScore = 0;
+        this.chainReactionCount = 0;
+        this.cascadeMultiplierActive = false;
         
         this.initialize();
     }
@@ -61,7 +67,10 @@ class ScoreSystem {
                 },
                 cascadeMultiplier: 1.5,
                 chainBonusBase: 100,
-                multiplierFactor: 2.0
+                chainBonusMultiplier: 1.2,
+                cascadeLengthBonus: 50,
+                multiplierFactor: 2.0,
+                maxChainBonus: 1000
             }
         };
     }
@@ -263,6 +272,132 @@ class ScoreSystem {
     }
     
     /**
+     * Start a new cascade sequence
+     * Resets cascade tracking for chain bonus calculations
+     */
+    startCascadeSequence() {
+        this.cascadeChainLength = 0;
+        this.currentCascadeScore = 0;
+        this.chainReactionCount = 0;
+        this.cascadeMultiplierActive = true;
+        
+        console.log('Started new cascade sequence');
+        
+        // Emit cascade start event
+        this.scene.events.emit('cascadeStarted', {
+            chainLength: this.cascadeChainLength,
+            chainCount: this.chainReactionCount
+        });
+    }
+    
+    /**
+     * End the current cascade sequence and apply final bonuses
+     */
+    endCascadeSequence() {
+        if (!this.cascadeMultiplierActive) return;
+        
+        const finalBonus = this.calculateCascadeBonus();
+        
+        if (finalBonus > 0) {
+            this.addScore(finalBonus);
+            
+            // Emit cascade completion event with bonus details
+            this.scene.events.emit('cascadeCompleted', {
+                chainLength: this.cascadeChainLength,
+                chainCount: this.chainReactionCount,
+                cascadeScore: this.currentCascadeScore,
+                finalBonus: finalBonus,
+                totalBonus: this.currentCascadeScore + finalBonus
+            });
+        }
+        
+        // Reset cascade tracking
+        this.cascadeChainLength = 0;
+        this.currentCascadeScore = 0;
+        this.chainReactionCount = 0;
+        this.cascadeMultiplierActive = false;
+        
+        console.log(`Ended cascade sequence with ${finalBonus} bonus points`);
+    }
+    
+    /**
+     * Calculate cascade bonus based on chain length and reaction count
+     * @returns {number} Cascade bonus points
+     */
+    calculateCascadeBonus() {
+        if (this.cascadeChainLength <= 1 && this.chainReactionCount === 0) {
+            return 0; // No bonus for single actions
+        }
+        
+        const settings = this.settings.scoring;
+        let bonus = 0;
+        
+        // Chain reaction bonus (exponential growth)
+        if (this.chainReactionCount > 0) {
+            const chainBase = settings.chainBonusBase || 100;
+            const chainMultiplier = settings.chainBonusMultiplier || 1.2;
+            const maxBonus = settings.maxChainBonus || 1000;
+            
+            bonus += Math.min(
+                chainBase * Math.pow(chainMultiplier, this.chainReactionCount - 1),
+                maxBonus
+            );
+        }
+        
+        // Cascade length bonus (linear growth)
+        if (this.cascadeChainLength > 1) {
+            const lengthBonus = settings.cascadeLengthBonus || 50;
+            bonus += lengthBonus * (this.cascadeChainLength - 1);
+        }
+        
+        // Apply cascade multiplier to total cascade score
+        if (this.currentCascadeScore > 0) {
+            const cascadeMultiplier = settings.cascadeMultiplier || 1.5;
+            const multiplierBonus = Math.floor(this.currentCascadeScore * (cascadeMultiplier - 1));
+            bonus += multiplierBonus;
+        }
+        
+        return Math.floor(bonus);
+    }
+    
+    /**
+     * Record a chain reaction explosion
+     * @param {Array<Tile>} explodedTiles - Tiles that exploded in this chain
+     */
+    recordChainReaction(explodedTiles) {
+        if (!this.cascadeMultiplierActive) return;
+        
+        this.chainReactionCount++;
+        this.cascadeChainLength++;
+        
+        console.log(`Chain reaction ${this.chainReactionCount}, cascade length: ${this.cascadeChainLength}`);
+        
+        // Emit chain reaction event
+        this.scene.events.emit('chainReaction', {
+            chainCount: this.chainReactionCount,
+            cascadeLength: this.cascadeChainLength,
+            tilesExploded: explodedTiles.length
+        });
+    }
+    
+    /**
+     * Score a word within a cascade sequence
+     * @param {Array<Tile>} tiles - Tiles forming the word
+     * @returns {number} Points scored
+     */
+    scoreCascadeWord(tiles) {
+        const points = this.calculateWordScore(tiles);
+        
+        if (this.cascadeMultiplierActive) {
+            this.currentCascadeScore += points;
+            this.cascadeChainLength++;
+        }
+        
+        this.addScore(points);
+        return points;
+    }
+    
+    /**
      * Get detailed scoring breakdown for a word
      * @param {Array<Tile>} tiles - Tiles forming the word
      * @returns {Object} Detailed scoring information
@@ -325,7 +460,7 @@ class ScoreSystem {
     }
     
     /**
-     * Get scoring statistics
+     * Get scoring statistics including cascade information
      * @returns {Object} Scoring statistics
      */
     getStats() {
@@ -333,8 +468,107 @@ class ScoreSystem {
             currentScore: this.currentScore,
             targetScore: this.targetScore,
             progress: this.getProgress(),
-            hasReachedTarget: this.hasReachedTarget()
+            hasReachedTarget: this.hasReachedTarget(),
+            cascadeActive: this.cascadeMultiplierActive,
+            chainLength: this.cascadeChainLength,
+            chainReactions: this.chainReactionCount,
+            cascadeScore: this.currentCascadeScore
         };
+    }
+    
+    /**
+     * Create animated score popup
+     * @param {number} points - Points to display
+     * @param {number} x - World X position
+     * @param {number} y - World Y position
+     * @param {Object} options - Animation options
+     */
+    createScorePopup(points, x, y, options = {}) {
+        const {
+            color = '#ffffff',
+            fontSize = 24,
+            duration = 1000,
+            offsetY = -50,
+            isBonus = false
+        } = options;
+        
+        // Create score text
+        const scoreText = this.scene.add.text(x, y, `+${points}`, {
+            fontSize: `${fontSize}px`,
+            fill: color,
+            fontFamily: 'Arial, sans-serif',
+            fontStyle: 'bold',
+            stroke: '#000000',
+            strokeThickness: 2
+        }).setOrigin(0.5);
+        
+        // Add bonus indicator for special scores
+        if (isBonus) {
+            scoreText.setText(`BONUS +${points}`);
+            scoreText.setFontSize(fontSize + 4);
+        }
+        
+        // Animate the popup
+        this.scene.tweens.add({
+            targets: scoreText,
+            y: y + offsetY,
+            alpha: 0,
+            scale: 1.2,
+            duration: duration,
+            ease: 'Power2',
+            onComplete: () => scoreText.destroy()
+        });
+        
+        return scoreText;
+    }
+    
+    /**
+     * Create chain reaction bonus popup
+     * @param {number} chainCount - Number of chain reactions
+     * @param {number} bonus - Bonus points awarded
+     * @param {number} x - World X position
+     * @param {number} y - World Y position
+     */
+    createChainBonusPopup(chainCount, bonus, x, y) {
+        const chainText = this.scene.add.text(x, y, `${chainCount}x CHAIN!`, {
+            fontSize: '20px',
+            fill: '#f39c12',
+            fontFamily: 'Arial, sans-serif',
+            fontStyle: 'bold',
+            stroke: '#000000',
+            strokeThickness: 2
+        }).setOrigin(0.5);
+        
+        const bonusText = this.scene.add.text(x, y + 25, `+${bonus}`, {
+            fontSize: '28px',
+            fill: '#e74c3c',
+            fontFamily: 'Arial, sans-serif',
+            fontStyle: 'bold',
+            stroke: '#000000',
+            strokeThickness: 2
+        }).setOrigin(0.5);
+        
+        // Animate chain indicator
+        this.scene.tweens.add({
+            targets: chainText,
+            y: y - 30,
+            alpha: 0,
+            scale: 1.3,
+            duration: 1200,
+            ease: 'Power2',
+            onComplete: () => chainText.destroy()
+        });
+        
+        // Animate bonus points
+        this.scene.tweens.add({
+            targets: bonusText,
+            y: y - 50,
+            alpha: 0,
+            scale: 1.5,
+            duration: 1500,
+            ease: 'Power2',
+            onComplete: () => bonusText.destroy()
+        });
     }
     
     /**

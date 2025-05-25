@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Scoring System Test - Word Match</title>
+    <link rel="stylesheet" href="test-styles.css">
+    <style>
+        .scoring-info {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        
+        .scoring-breakdown {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin: 10px 0;
+        }
+        
+        .score-item {
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .chain-indicator {
+            background: linear-gradient(45deg, #ff6b6b, #ffa502);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-weight: bold;
+            display: inline-block;
+            margin: 2px;
+        }
+        
+        .multiplier-tile {
+            background: #f39c12 !important;
+            color: white !important;
+            font-weight: bold;
+        }
+        
+        .cascade-active {
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="test-header">
+            <h1>🎯 Advanced Scoring System Test</h1>
+            <p>Testing multipliers, chain bonuses, cascade scoring, and score animations</p>
+            <div class="test-nav">
+                <a href="index.html" class="nav-link">← Back to Test Suite</a>
+                <a href="../index.html" class="nav-link">Main Game →</a>
+            </div>
+        </header>
+
+        <div class="test-controls">
+            <button id="resetBtn" class="btn btn-secondary">Reset Game</button>
+            <button id="triggerCascadeBtn" class="btn btn-primary">Trigger Test Cascade</button>
+            <button id="addMultiplierBtn" class="btn btn-warning">Add Multiplier Tiles</button>
+            <button id="showStatsBtn" class="btn btn-info">Show Scoring Stats</button>
+        </div>
+
+        <div class="scoring-info">
+            <h3>🏆 Current Scoring Status</h3>
+            <div class="scoring-breakdown">
+                <div class="score-item">
+                    <strong>Current Score:</strong>
+                    <div id="currentScore">0</div>
+                </div>
+                <div class="score-item">
+                    <strong>Target Score:</strong>
+                    <div id="targetScore">1000</div>
+                </div>
+                <div class="score-item">
+                    <strong>Chain Length:</strong>
+                    <div id="chainLength">0</div>
+                </div>
+                <div class="score-item">
+                    <strong>Chain Reactions:</strong>
+                    <div id="chainReactions">0</div>
+                </div>
+                <div class="score-item">
+                    <strong>Cascade Score:</strong>
+                    <div id="cascadeScore">0</div>
+                </div>
+                <div class="score-item">
+                    <strong>Cascade Active:</strong>
+                    <div id="cascadeActive">No</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>🎮 Game Area</h3>
+            <div id="gameContainer"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 Advanced Scoring Features</h3>
+            <div class="feature-list">
+                <div class="feature-item">
+                    <h4>⭐ Multiplier Tiles</h4>
+                    <p>Orange tiles with stars that double the entire word score</p>
+                    <div class="test-result" id="multiplierTest">Ready to test</div>
+                </div>
+                
+                <div class="feature-item">
+                    <h4>🔗 Chain Reaction Bonuses</h4>
+                    <p>Exponential bonuses for consecutive chain reactions</p>
+                    <div class="test-result" id="chainTest">Ready to test</div>
+                </div>
+                
+                <div class="feature-item">
+                    <h4>🌊 Cascade Length Bonuses</h4>
+                    <p>Linear bonuses based on cascade sequence length</p>
+                    <div class="test-result" id="cascadeTest">Ready to test</div>
+                </div>
+                
+                <div class="feature-item">
+                    <h4>✨ Score Animations</h4>
+                    <p>Animated score popups and chain reaction indicators</p>
+                    <div class="test-result" id="animationTest">Ready to test</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>🧪 Test Instructions</h3>
+            <ol>
+                <li><strong>Basic Scoring:</strong> Form words to see base scoring with Scrabble values</li>
+                <li><strong>Multiplier Test:</strong> Click "Add Multiplier Tiles" then form words including orange ⭐ tiles</li>
+                <li><strong>Chain Reactions:</strong> Create words that trigger cascades and watch chain bonuses</li>
+                <li><strong>Cascade Scoring:</strong> Observe how cascade length affects final bonus</li>
+                <li><strong>Score Animations:</strong> Watch for animated score popups and chain indicators</li>
+            </ol>
+        </div>
+
+        <div class="test-section">
+            <h3>📈 Scoring Formula Reference</h3>
+            <div class="formula-box">
+                <h4>Word Score = Base Score + Length Bonus + Multiplier</h4>
+                <ul>
+                    <li><strong>Base Score:</strong> Sum of Scrabble tile values</li>
+                    <li><strong>Length Bonus:</strong> 0 (3 letters), 10 (4), 20 (5), 30 (6), 50 (7+)</li>
+                    <li><strong>Multiplier:</strong> 2x total if any multiplier tiles used</li>
+                </ul>
+                
+                <h4>Cascade Bonus = Chain Bonus + Length Bonus + Cascade Multiplier</h4>
+                <ul>
+                    <li><strong>Chain Bonus:</strong> 100 × 1.2^(chains-1) (max 1000)</li>
+                    <li><strong>Length Bonus:</strong> 50 × (cascade_length-1)</li>
+                    <li><strong>Cascade Multiplier:</strong> 1.5x of total cascade score</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="debug-section">
+            <h3>🔧 Debug Information</h3>
+            <div id="debugInfo" class="debug-info">
+                <div>Game initialized: <span id="gameInitialized">No</span></div>
+                <div>Systems loaded: <span id="systemsLoaded">0/5</span></div>
+                <div>Last word scored: <span id="lastWord">None</span></div>
+                <div>Last cascade bonus: <span id="lastCascadeBonus">0</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
+    
+    <!-- Load game systems -->
+    <script src="../src/utils/LevelLoader.js"></script>
+    <script src="../src/systems/WordValidator.js"></script>
+    <script src="../src/core/Tile.js"></script>
+    <script src="../src/core/Grid.js"></script>
+    <script src="../src/systems/ScoreSystem.js"></script>
+    <script src="../src/systems/EffectsQueue.js"></script>
+    <script src="../src/systems/InputSystem.js"></script>
+    <script src="../src/core/GameScene.js"></script>
+
+    <script>
+        let game;
+        let gameScene;
+        let scoreSystem;
+        
+        // Initialize the test
+        async function initTest() {
+            try {
+                console.log('Initializing advanced scoring test...');
+                
+                // Load configuration using static methods
+                const levelConfig = await LevelLoader.load(1);
+                const settings = await LevelLoader.loadSettings();
+                
+                // Create Phaser game
+                const config = {
+                    type: Phaser.AUTO,
+                    width: 800,
+                    height: 600,
+                    parent: 'gameContainer',
+                    backgroundColor: '#2c3e50',
+                    scene: GameScene,
+                    physics: {
+                        default: 'arcade',
+                        arcade: { debug: false }
+                    }
+                };
+                
+                game = new Phaser.Game(config);
+                
+                // Store configurations in registry before starting scene
+                game.registry.set('levelConfig', levelConfig);
+                game.registry.set('settings', settings);
+                
+                // Wait for scene to be ready
+                game.scene.start('GameScene', { level: 1 });
+                
+                // Set up event listeners after a delay
+                setTimeout(() => {
+                    gameScene = game.scene.getScene('GameScene');
+                    scoreSystem = gameScene.registry.get('scoreSystem');
+                    
+                    if (scoreSystem) {
+                        setupEventListeners();
+                        updateScoringDisplay();
+                        document.getElementById('gameInitialized').textContent = 'Yes';
+                        document.getElementById('systemsLoaded').textContent = '5/5';
+                    }
+                }, 2000);
+                
+            } catch (error) {
+                console.error('Failed to initialize test:', error);
+                document.getElementById('debugInfo').innerHTML += `<div style="color: red;">Error: ${error.message}</div>`;
+            }
+        }
+        
+        // Set up event listeners for scoring events
+        function setupEventListeners() {
+            if (!gameScene) return;
+            
+            // Listen for scoring events
+            gameScene.events.on('wordScored', (data) => {
+                document.getElementById('lastWord').textContent = data.word;
+                updateScoringDisplay();
+                
+                // Test multiplier functionality
+                if (data.hasMultiplier) {
+                    document.getElementById('multiplierTest').textContent = `✅ Multiplier active! ${data.multiplierBonus} bonus points`;
+                    document.getElementById('multiplierTest').className = 'test-result success';
+                }
+            });
+            
+            gameScene.events.on('cascadeStarted', (data) => {
+                document.getElementById('cascadeActive').textContent = 'Yes';
+                document.getElementById('cascadeActive').parentElement.classList.add('cascade-active');
+                updateScoringDisplay();
+            });
+            
+            gameScene.events.on('chainReaction', (data) => {
+                document.getElementById('chainTest').textContent = `✅ Chain ${data.chainCount} detected!`;
+                document.getElementById('chainTest').className = 'test-result success';
+                updateScoringDisplay();
+            });
+            
+            gameScene.events.on('cascadeCompleted', (data) => {
+                document.getElementById('cascadeActive').textContent = 'No';
+                document.getElementById('cascadeActive').parentElement.classList.remove('cascade-active');
+                document.getElementById('lastCascadeBonus').textContent = data.finalBonus;
+                
+                if (data.finalBonus > 0) {
+                    document.getElementById('cascadeTest').textContent = `✅ Cascade bonus: ${data.finalBonus} points`;
+                    document.getElementById('cascadeTest').className = 'test-result success';
+                }
+                
+                updateScoringDisplay();
+            });
+            
+            // Test score animations
+            const originalCreateScorePopup = scoreSystem.createScorePopup;
+            scoreSystem.createScorePopup = function(...args) {
+                document.getElementById('animationTest').textContent = '✅ Score animation triggered!';
+                document.getElementById('animationTest').className = 'test-result success';
+                return originalCreateScorePopup.apply(this, args);
+            };
+        }
+        
+        // Update scoring display
+        function updateScoringDisplay() {
+            if (!scoreSystem) return;
+            
+            const stats = scoreSystem.getStats();
+            document.getElementById('currentScore').textContent = stats.currentScore;
+            document.getElementById('targetScore').textContent = stats.targetScore;
+            document.getElementById('chainLength').textContent = stats.chainLength;
+            document.getElementById('chainReactions').textContent = stats.chainReactions;
+            document.getElementById('cascadeScore').textContent = stats.cascadeScore;
+            document.getElementById('cascadeActive').textContent = stats.cascadeActive ? 'Yes' : 'No';
+        }
+        
+        // Button event handlers
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            if (gameScene) {
+                gameScene.scene.restart();
+                setTimeout(() => {
+                    scoreSystem = gameScene.registry.get('scoreSystem');
+                    setupEventListeners();
+                    updateScoringDisplay();
+                }, 1000);
+            }
+        });
+        
+        document.getElementById('triggerCascadeBtn').addEventListener('click', () => {
+            if (gameScene && gameScene.grid) {
+                // Create a test cascade by destabilizing some tiles
+                const grid = gameScene.grid;
+                const tiles = [];
+                
+                // Get some tiles to destabilize
+                for (let x = 2; x < 5; x++) {
+                    for (let y = 2; y < 4; y++) {
+                        const tile = grid.getTileAt(x, y);
+                        if (tile) {
+                            // Apply multiple surges to destabilize
+                            tile.applySurge();
+                            tile.applySurge();
+                            tile.applySurge();
+                            tiles.push(tile);
+                        }
+                    }
+                }
+                
+                if (tiles.length > 0) {
+                    gameScene.effectsQueue.triggerWordRipple(tiles);
+                }
+            }
+        });
+        
+        document.getElementById('addMultiplierBtn').addEventListener('click', () => {
+            if (gameScene && gameScene.grid) {
+                const grid = gameScene.grid;
+                
+                // Convert some random tiles to multiplier tiles
+                for (let i = 0; i < 3; i++) {
+                    const x = Math.floor(Math.random() * grid.width);
+                    const y = Math.floor(Math.random() * grid.height);
+                    const tile = grid.getTileAt(x, y);
+                    
+                    if (tile && tile.type === TILE_TYPES.NORMAL) {
+                        tile.type = TILE_TYPES.MULTIPLIER;
+                        tile.updateVisuals();
+                    }
+                }
+            }
+        });
+        
+        document.getElementById('showStatsBtn').addEventListener('click', () => {
+            if (scoreSystem) {
+                const stats = scoreSystem.getStats();
+                const breakdown = scoreSystem.getScoreBreakdown([]);
+                
+                alert(`Scoring Statistics:
+Current Score: ${stats.currentScore}
+Target Score: ${stats.targetScore}
+Progress: ${stats.progress.toFixed(1)}%
+Cascade Active: ${stats.cascadeActive}
+Chain Length: ${stats.chainLength}
+Chain Reactions: ${stats.chainReactions}
+Cascade Score: ${stats.cascadeScore}`);
+            }
+        });
+        
+        // Initialize when page loads
+        window.addEventListener('load', initTest);
+    </script>
+</body>
+</html>

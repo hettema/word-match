@@ -178,6 +178,12 @@
   },
   "active": "dba328133ee3b571",
   "lastOpenFiles": [
+    "word-match-style-guide.md",
+    "kanban.md",
+    "word-match-practical-style-guide.md",
+    "tests/test-advanced-scoring.html",
+    "word-match-style-implementation.md",
+    "phaser-style-implementation.md",
     "index.html",
     "tests/index.html",
     "tests/test-styles.css",
@@ -186,9 +192,6 @@
     "tests/test-special-tiles.html",
     "tests/test-special-tiles-playable.html",
     "tests/test-scoring-playable.html",
-    "tests/test-ripple-effects.html",
-    "tests/test-input.html",
-    "tests/test-grid.html",
-    "kanban.md"
+    "tests/test-ripple-effects.html"
   ]
 }

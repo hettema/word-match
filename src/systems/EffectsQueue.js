@@ -65,7 +65,11 @@ class EffectsQueue {
     triggerWordRipple(wordTiles) {
         if (!wordTiles || wordTiles.length === 0) return;
         
-        
+        // Start cascade sequence in scoring system
+        const scoreSystem = this.scene.registry.get('scoreSystem');
+        if (scoreSystem) {
+            scoreSystem.startCascadeSequence();
+        }
         
         // Start with explosion of word tiles
         this.addEffect({
@@ -90,6 +94,13 @@ class EffectsQueue {
         if (this.queue.length === 0) {
             this.isProcessing = false;
             console.log('DEBUG: EffectsQueue emitting queue-empty - no more effects');
+            
+            // End cascade sequence when queue is empty
+            const scoreSystem = this.scene.registry.get('scoreSystem');
+            if (scoreSystem) {
+                scoreSystem.endCascadeSequence();
+            }
+            
             this.events.emit('queue-empty');
             return;
         }
@@ -446,6 +457,12 @@ class EffectsQueue {
         });
         
         if (tilesToExplode.length > 0) {
+            // Record additional chain reaction in scoring system
+            const scoreSystem = this.scene.registry.get('scoreSystem');
+            if (scoreSystem) {
+                scoreSystem.recordChainReaction(tilesToExplode);
+            }
+            
             // Continue chain reaction with newly exploding tiles
             this.addEffect({
                 type: 'explosion',
