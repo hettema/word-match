@@ -177,6 +177,9 @@
   },
   "active": "dba328133ee3b571",
   "lastOpenFiles": [
+    "test-input.html",
+    "src/systems/InputSystem.js",
+    "src/systems",
     "test-grid.html",
     "src/core/Grid.js",
     "src/core/Tile.js",
@@ -185,9 +188,6 @@
     "src/utils/LevelLoader.js",
     "src/utils",
     "src",
-    "config/settings.json",
-    "config/levels.json",
-    "config",
     "kanban.md"
   ]
 }

@@ -232,7 +232,7 @@ class LevelLoader {
     }
 }
 
-// Export for use in other modules
+// Export for use in other modules (CommonJS)
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = LevelLoader;
 }

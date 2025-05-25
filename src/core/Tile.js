@@ -337,5 +337,14 @@ class Tile {
     }
 }
 
-// Export constants and class
-export { Tile, TILE_STATES, TILE_TYPES };
+// Make available globally for script tag imports
+if (typeof window !== 'undefined') {
+    window.Tile = Tile;
+    window.TILE_STATES = TILE_STATES;
+    window.TILE_TYPES = TILE_TYPES;
+}
+
+// Export for CommonJS if needed
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { Tile, TILE_STATES, TILE_TYPES };
+}

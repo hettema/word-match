@@ -56,8 +56,10 @@
   "input": {
     "touchEnabled": true,
     "mouseEnabled": true,
-    "traceLineWidth": 4,
-    "traceLineColor": "#3498db",
+    "touchTolerance": 64,
+    "minWordLength": 2,
+    "tracingLineWidth": 4,
+    "tracingLineColor": "#3498db",
     "selectionHighlightColor": "#e74c3c",
     "hoverHighlightColor": "#f39c12"
   },

@@ -3,7 +3,7 @@
  * Handles tile creation, positioning, neighbor detection, and grid operations
  */
 
-import { Tile, TILE_STATES, TILE_TYPES } from './Tile.js';
+// Tile.js will be loaded via script tag, so classes are available globally
 
 class Grid {
     /**
@@ -63,7 +63,12 @@ class Grid {
      */
     buildTileDistribution(distributionName) {
         const levelConfig = this.scene.registry.get('levelConfig');
-        const distribution = levelConfig.tileDistributionData;
+        let distribution = levelConfig?.tileDistributionData;
+        
+        // If no distribution data in registry, check if it's in the config directly
+        if (!distribution && this.config.tileDistributionData) {
+            distribution = this.config.tileDistributionData;
+        }
         
         if (!distribution) {
             console.error(`Tile distribution '${distributionName}' not found`);
@@ -486,4 +491,12 @@ class Grid {
     }
 }
 
-export { Grid };
+// Make available globally for script tag imports
+if (typeof window !== 'undefined') {
+    window.Grid = Grid;
+}
+
+// Export for CommonJS if needed
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { Grid };
+}
