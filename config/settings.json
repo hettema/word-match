@@ -1,0 +1,75 @@
+{
+  "game": {
+    "name": "Word Cascade",
+    "version": "1.0.0",
+    "debug": false
+  },
+  "display": {
+    "width": 800,
+    "height": 600,
+    "backgroundColor": "#2c3e50",
+    "tileSize": 64,
+    "gridPadding": 10,
+    "responsive": true,
+    "minWidth": 375
+  },
+  "gameplay": {
+    "minWordLength": 3,
+    "maxWordLength": 15,
+    "animationSpeed": 1.0,
+    "cascadeDelay": 200,
+    "explosionDuration": 500,
+    "rippleDelay": 100
+  },
+  "scoring": {
+    "wordLengthBonus": {
+      "3": 0,
+      "4": 10,
+      "5": 20,
+      "6": 30,
+      "7": 50,
+      "8": 80,
+      "9": 120,
+      "10": 160,
+      "11": 200,
+      "12": 250,
+      "13": 300,
+      "14": 350,
+      "15": 400
+    },
+    "cascadeMultiplier": 1.5,
+    "chainBonusBase": 100
+  },
+  "effects": {
+    "particleCount": 20,
+    "explosionRadius": 80,
+    "rippleSpeed": 300,
+    "shakeIntensity": 5,
+    "flashDuration": 150
+  },
+  "audio": {
+    "enabled": true,
+    "masterVolume": 0.7,
+    "sfxVolume": 0.8,
+    "musicVolume": 0.5
+  },
+  "input": {
+    "touchEnabled": true,
+    "mouseEnabled": true,
+    "traceLineWidth": 4,
+    "traceLineColor": "#3498db",
+    "selectionHighlightColor": "#e74c3c",
+    "hoverHighlightColor": "#f39c12"
+  },
+  "performance": {
+    "tilePoolSize": 100,
+    "maxParticles": 200,
+    "targetFPS": 60,
+    "enableProfiling": false
+  },
+  "dictionary": {
+    "path": "./assets/dict.txt",
+    "cacheEnabled": true,
+    "preloadEnabled": true
+  }
+}

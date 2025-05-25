@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuration System Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .success { color: #27ae60; }
+        .error { color: #e74c3c; }
+        .info { color: #3498db; }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <h1>Word Cascade - Configuration System Test</h1>
+    
+    <div class="test-section">
+        <h2>CONFIG-01 Acceptance Criteria Test</h2>
+        <p>Testing all acceptance criteria for the configuration system:</p>
+        <ul>
+            <li>✅ Level configurations load from <code>config/levels.json</code></li>
+            <li>✅ Settings load from <code>config/settings.json</code></li>
+            <li>✅ <code>LevelLoader.load()</code> returns proper config objects</li>
+            <li>✅ All PRD Section 3 parameters are configurable</li>
+            <li>✅ Error handling for missing/invalid configs</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Controls</h2>
+        <button onclick="testLoadLevel(1)">Test Load Level 1</button>
+        <button onclick="testLoadLevel(99)">Test Invalid Level</button>
+        <button onclick="testLoadSettings()">Test Load Settings</button>
+        <button onclick="testGetAvailableLevels()">Test Available Levels</button>
+        <button onclick="testValidation()">Test Validation</button>
+        <button onclick="runAllTests()">Run All Tests</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Results</h2>
+        <div id="results"></div>
+    </div>
+
+    <script src="src/utils/LevelLoader.js"></script>
+    <script>
+        const results = document.getElementById('results');
+
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = type;
+            div.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${message}`;
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+        }
+
+        function logObject(obj, title) {
+            log(`<strong>${title}:</strong>`);
+            const pre = document.createElement('pre');
+            pre.textContent = JSON.stringify(obj, null, 2);
+            results.appendChild(pre);
+        }
+
+        async function testLoadLevel(levelId) {
+            log(`Testing LevelLoader.load(${levelId})...`);
+            try {
+                const level = await LevelLoader.load(levelId);
+                log(`✅ Successfully loaded level ${levelId}`, 'success');
+                logObject(level, `Level ${levelId} Configuration`);
+                
+                // Verify required fields
+                const required = ['id', 'gridSize', 'targetScore', 'moves', 'tileDistribution', 'ripple', 'specialTiles'];
+                const missing = required.filter(field => !(field in level));
+                if (missing.length === 0) {
+                    log('✅ All required fields present', 'success');
+                } else {
+                    log(`❌ Missing fields: ${missing.join(', ')}`, 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ Failed to load level ${levelId}: ${error.message}`, 'error');
+            }
+        }
+
+        async function testLoadSettings() {
+            log('Testing LevelLoader.loadSettings()...');
+            try {
+                const settings = await LevelLoader.loadSettings();
+                log('✅ Successfully loaded settings', 'success');
+                logObject(settings, 'Game Settings');
+                
+                // Verify required sections
+                const required = ['game', 'display', 'gameplay', 'scoring', 'effects'];
+                const missing = required.filter(section => !(section in settings));
+                if (missing.length === 0) {
+                    log('✅ All required settings sections present', 'success');
+                } else {
+                    log(`❌ Missing sections: ${missing.join(', ')}`, 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ Failed to load settings: ${error.message}`, 'error');
+            }
+        }
+
+        async function testGetAvailableLevels() {
+            log('Testing LevelLoader.getAvailableLevels()...');
+            try {
+                const levels = await LevelLoader.getAvailableLevels();
+                log(`✅ Successfully loaded ${levels.length} available levels`, 'success');
+                logObject(levels, 'Available Levels');
+            } catch (error) {
+                log(`❌ Failed to get available levels: ${error.message}`, 'error');
+            }
+        }
+
+        async function testValidation() {
+            log('Testing validation functions...');
+            
+            // Test invalid level
+            try {
+                const invalidLevel = { id: 1 }; // Missing required fields
+                LevelLoader.validateLevel(invalidLevel);
+                log('❌ Validation should have failed for invalid level', 'error');
+            } catch (error) {
+                log('✅ Validation correctly rejected invalid level', 'success');
+            }
+            
+            // Test invalid settings
+            try {
+                const invalidSettings = { game: {} }; // Missing required sections
+                LevelLoader.validateSettings(invalidSettings);
+                log('❌ Validation should have failed for invalid settings', 'error');
+            } catch (error) {
+                log('✅ Validation correctly rejected invalid settings', 'success');
+            }
+        }
+
+        async function runAllTests() {
+            log('🚀 Running all configuration tests...', 'info');
+            results.innerHTML = '';
+            
+            await testLoadSettings();
+            await testGetAvailableLevels();
+            await testLoadLevel(1);
+            await testLoadLevel(3);
+            await testLoadLevel(99); // Should fail
+            await testValidation();
+            
+            log('🏁 All tests completed!', 'info');
+        }
+
+        // Auto-run basic test on page load
+        window.addEventListener('load', () => {
+            log('Configuration System Test Page Loaded', 'info');
+            log('Click "Run All Tests" to verify CONFIG-01 implementation', 'info');
+        });
+    </script>
+</body>
+</html>
