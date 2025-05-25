@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Cascades Test - EFFECTS-03 - Word Match</title>
+    <link rel="stylesheet" href="test-styles.css">
+    <style>
+        .cascade-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .cascade-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .stat-box {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .stat-box h4 {
+            margin: 0 0 10px 0;
+            color: #3498db;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2ecc71;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #bdc3c7;
+            margin-top: 5px;
+        }
+        
+        .performance-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        
+        .performance-indicator.good { background-color: #2ecc71; }
+        .performance-indicator.warning { background-color: #f39c12; }
+        .performance-indicator.critical { background-color: #e74c3c; }
+        
+        .cascade-log {
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            margin-top: 15px;
+        }
+        
+        .test-scenario {
+            background: rgba(52, 73, 94, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #3498db;
+        }
+        
+        .test-scenario h4 {
+            margin: 0 0 10px 0;
+            color: #3498db;
+        }
+        
+        .test-scenario p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #bdc3c7;
+        }
+        
+        .safety-limits {
+            background: rgba(231, 76, 60, 0.1);
+            border: 1px solid rgba(231, 76, 60, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        
+        .safety-limits h4 {
+            color: #e74c3c;
+            margin: 0 0 10px 0;
+        }
+        
+        .limit-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        
+        .limit-value {
+            font-weight: bold;
+            color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌊 Advanced Cascades Test - EFFECTS-03</h1>
+            <p>Testing complex multi-level chain reactions, infinite loop prevention, and performance optimization</p>
+        </div>
+        
+        <div class="controls">
+            <button class="btn" id="startGame">Start Game</button>
+            <button class="btn" id="resetCascade">Reset Cascade Tracking</button>
+            <button class="btn danger" id="emergencyStop">Emergency Stop</button>
+        </div>
+        
+        <div class="cascade-controls">
+            <button class="btn success" id="testSimpleCascade">Simple Cascade</button>
+            <button class="btn success" id="testComplexCascade">Complex Multi-Level</button>
+            <button class="btn success" id="testChainReaction">Chain Reaction Test</button>
+            <button class="btn success" id="testPerformanceLimit">Performance Limit</button>
+            <button class="btn warning" id="testInfiniteLoop">Infinite Loop Test</button>
+            <button class="btn warning" id="testDepthLimit">Depth Limit Test</button>
+            <button class="btn warning" id="testTimeLimit">Time Limit Test</button>
+            <button class="btn" id="testAdaptivePerformance">Adaptive Performance</button>
+        </div>
+        
+        <div class="game-container">
+            <div id="game"></div>
+        </div>
+        
+        <div class="cascade-stats">
+            <div class="stat-box">
+                <h4>🎮 Game Status</h4>
+                <div id="gameStatus">
+                    <span class="status-indicator red"></span>Not Started
+                </div>
+            </div>
+            
+            <div class="stat-box">
+                <h4>🌊 Cascade Depth</h4>
+                <div class="stat-value" id="cascadeDepth">0</div>
+                <div class="stat-label">Current / <span id="maxDepth">10</span> Max</div>
+            </div>
+            
+            <div class="stat-box">
+                <h4>⚡ Chain Reactions</h4>
+                <div class="stat-value" id="chainCount">0</div>
+                <div class="stat-label">Total chain reactions triggered</div>
+            </div>
+            
+            <div class="stat-box">
+                <h4>📊 Performance</h4>
+                <div>
+                    <span class="performance-indicator good" id="fpsIndicator"></span>
+                    <span class="stat-value" id="currentFPS">60</span> FPS
+                </div>
+                <div class="stat-label">Visual Intensity: <span id="visualIntensity">100</span>%</div>
+            </div>
+            
+            <div class="stat-box">
+                <h4>⏱️ Cascade Duration</h4>
+                <div class="stat-value" id="cascadeDuration">0</div>
+                <div class="stat-label">Milliseconds elapsed</div>
+            </div>
+            
+            <div class="stat-box">
+                <h4>🎯 Processed Tiles</h4>
+                <div class="stat-value" id="processedTiles">0</div>
+                <div class="stat-label">Unique tiles affected</div>
+            </div>
+        </div>
+        
+        <div class="info-box">
+            <h3>🧪 Test Scenarios</h3>
+            
+            <div class="test-scenario">
+                <h4>Simple Cascade</h4>
+                <p>Tests basic cascade functionality with 2-3 levels of chain reactions.</p>
+                <p><strong>Expected:</strong> Clean cascade progression with visual feedback.</p>
+            </div>
+            
+            <div class="test-scenario">
+                <h4>Complex Multi-Level</h4>
+                <p>Tests deep cascade chains with multiple simultaneous explosions.</p>
+                <p><strong>Expected:</strong> Batched processing for performance optimization.</p>
+            </div>
+            
+            <div class="test-scenario">
+                <h4>Chain Reaction Test</h4>
+                <p>Tests neighbor-to-neighbor chain propagation with distance-based intensity.</p>
+                <p><strong>Expected:</strong> Gradual intensity falloff with distance.</p>
+            </div>
+            
+            <div class="test-scenario">
+                <h4>Performance Limit</h4>
+                <p>Tests simultaneous explosion batching (limit: 8 per batch).</p>
+                <p><strong>Expected:</strong> Smooth performance even with many explosions.</p>
+            </div>
+            
+            <div class="test-scenario">
+                <h4>Infinite Loop Test</h4>
+                <p>Attempts to create infinite cascade loop to test prevention.</p>
+                <p><strong>Expected:</strong> Cascade terminates safely at depth limit.</p>
+            </div>
+            
+            <div class="test-scenario">
+                <h4>Depth Limit Test</h4>
+                <p>Tests maximum cascade depth enforcement (limit: 10 levels).</p>
+                <p><strong>Expected:</strong> Cascade stops at depth 10 with warning.</p>
+            </div>
+            
+            <div class="test-scenario">
+                <h4>Time Limit Test</h4>
+                <p>Tests cascade timeout protection (limit: 30 seconds).</p>
+                <p><strong>Expected:</strong> Cascade terminates after time limit.</p>
+            </div>
+            
+            <div class="test-scenario">
+                <h4>Adaptive Performance</h4>
+                <p>Tests FPS-based performance adaptation and effect reduction.</p>
+                <p><strong>Expected:</strong> Visual intensity reduces when FPS drops below 45.</p>
+            </div>
+        </div>
+        
+        <div class="safety-limits">
+            <h4>🛡️ Safety Limits & Protection</h4>
+            <div class="limit-item">
+                <span>Max Cascade Depth:</span>
+                <span class="limit-value" id="maxCascadeDepth">10</span>
+            </div>
+            <div class="limit-item">
+                <span>Max Cascade Duration:</span>
+                <span class="limit-value" id="maxCascadeDuration">30000ms</span>
+            </div>
+            <div class="limit-item">
+                <span>Simultaneous Explosion Limit:</span>
+                <span class="limit-value" id="explosionLimit">8</span>
+            </div>
+            <div class="limit-item">
+                <span>FPS Drop Threshold:</span>
+                <span class="limit-value" id="fpsThreshold">45</span>
+            </div>
+            <div class="limit-item">
+                <span>Can Continue Cascade:</span>
+                <span class="limit-value" id="canContinue">Yes</span>
+            </div>
+        </div>
+        
+        <div class="info-box">
+            <h3>📝 Cascade Log</h3>
+            <div class="cascade-log" id="cascadeLog">EFFECTS-03 Advanced Cascade System Ready\nClick 'Start Game' to begin testing...\n</div>
+        </div>
+    </div>
+
+    <!-- Phaser 3 -->
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
+    
+    <!-- Game Scripts -->
+    <script src="../src/utils/LevelLoader.js"></script>
+    <script src="../src/core/Tile.js"></script>
+    <script src="../src/core/Grid.js"></script>
+    <script src="../src/systems/WordValidator.js"></script>
+    <script src="../src/systems/ScoreSystem.js"></script>
+    <script src="../src/systems/InputSystem.js"></script>
+    <script src="../src/systems/EffectsQueue.js"></script>
+    <script src="../src/core/GameScene.js"></script>
+    
+    <script>
+        class AdvancedCascadeTestApp {
+            constructor() {
+                this.game = null;
+                this.scene = null;
+                this.updateInterval = null;
+                this.testRunning = false;
+                
+                this.initializeUI();
+                this.setupEventListeners();
+                this.startStatusUpdates();
+            }
+            
+            initializeUI() {
+                this.elements = {
+                    // Controls
+                    startGame: document.getElementById('startGame'),
+                    resetCascade: document.getElementById('resetCascade'),
+                    emergencyStop: document.getElementById('emergencyStop'),
+                    
+                    // Test buttons
+                    testSimpleCascade: document.getElementById('testSimpleCascade'),
+                    testComplexCascade: document.getElementById('testComplexCascade'),
+                    testChainReaction: document.getElementById('testChainReaction'),
+                    testPerformanceLimit: document.getElementById('testPerformanceLimit'),
+                    testInfiniteLoop: document.getElementById('testInfiniteLoop'),
+                    testDepthLimit: document.getElementById('testDepthLimit'),
+                    testTimeLimit: document.getElementById('testTimeLimit'),
+                    testAdaptivePerformance: document.getElementById('testAdaptivePerformance'),
+                    
+                    // Status displays
+                    gameStatus: document.getElementById('gameStatus'),
+                    cascadeDepth: document.getElementById('cascadeDepth'),
+                    maxDepth: document.getElementById('maxDepth'),
+                    chainCount: document.getElementById('chainCount'),
+                    currentFPS: document.getElementById('currentFPS'),
+                    fpsIndicator: document.getElementById('fpsIndicator'),
+                    visualIntensity: document.getElementById('visualIntensity'),
+                    cascadeDuration: document.getElementById('cascadeDuration'),
+                    processedTiles: document.getElementById('processedTiles'),
+                    
+                    // Safety limits
+                    maxCascadeDepth: document.getElementById('maxCascadeDepth'),
+                    maxCascadeDuration: document.getElementById('maxCascadeDuration'),
+                    explosionLimit: document.getElementById('explosionLimit'),
+                    fpsThreshold: document.getElementById('fpsThreshold'),
+                    canContinue: document.getElementById('canContinue'),
+                    
+                    // Log
+                    cascadeLog: document.getElementById('cascadeLog')
+                };
+            }
+            
+            setupEventListeners() {
+                this.elements.startGame.addEventListener('click', () => this.startGame());
+                this.elements.resetCascade.addEventListener('click', () => this.resetCascadeTracking());
+                this.elements.emergencyStop.addEventListener('click', () => this.emergencyStop());
+                
+                // Test buttons
+                this.elements.testSimpleCascade.addEventListener('click', () => this.testSimpleCascade());
+                this.elements.testComplexCascade.addEventListener('click', () => this.testComplexCascade());
+                this.elements.testChainReaction.addEventListener('click', () => this.testChainReaction());
+                this.elements.testPerformanceLimit.addEventListener('click', () => this.testPerformanceLimit());
+                this.elements.testInfiniteLoop.addEventListener('click', () => this.testInfiniteLoop());
+                this.elements.testDepthLimit.addEventListener('click', () => this.testDepthLimit());
+                this.elements.testTimeLimit.addEventListener('click', () => this.testTimeLimit());
+                this.elements.testAdaptivePerformance.addEventListener('click', () => this.testAdaptivePerformance());
+            }
+            
+            addToLog(message) {
+                const timestamp = new Date().toLocaleTimeString();
+                this.elements.cascadeLog.textContent += `[${timestamp}] ${message}\n`;
+                this.elements.cascadeLog.scrollTop = this.elements.cascadeLog.scrollHeight;
+            }
+            
+            async startGame() {
+                try {
+                    this.addToLog('EFFECTS-03: Starting advanced cascade test environment...');
+                    
+                    const config = {
+                        type: Phaser.AUTO,
+                        width: 800,
+                        height: 600,
+                        parent: 'game',
+                        backgroundColor: '#2c3e50',
+                        scene: GameScene,
+                        physics: {
+                            default: 'arcade',
+                            arcade: { debug: false }
+                        }
+                    };
+                    
+                    this.game = new Phaser.Game(config);
+                    
+                    this.game.events.once('ready', () => {
+                        this.scene = this.game.scene.getScene('GameScene');
+                        this.updateGameStatus('Running', 'green');
+                        this.enableTestButtons();
+                        this.addToLog('EFFECTS-03: Game started successfully! Advanced cascade system active.');
+                        
+                        // Display initial safety limits
+                        this.updateSafetyLimits();
+                    });
+                    
+                } catch (error) {
+                    this.addToLog(`EFFECTS-03: Failed to start game: ${error.message}`);
+                    this.updateGameStatus('Error', 'red');
+                }
+            }
+            
+            enableTestButtons() {
+                const testButtons = [
+                    'testSimpleCascade', 'testComplexCascade', 'testChainReaction', 
+                    'testPerformanceLimit', 'testInfiniteLoop', 'testDepthLimit', 
+                    'testTimeLimit', 'testAdaptivePerformance', 'resetCascade', 'emergencyStop'
+                ];
+                
+                testButtons.forEach(id => {
+                    this.elements[id].disabled = false;
+                });
+            }
+            
+            updateGameStatus(status, color) {
+                this.elements.gameStatus.innerHTML = `<span class="status-indicator ${color}"></span>${status}`;
+            }
+            
+            updateSafetyLimits() {
+                if (!this.scene || !this.scene.effectsQueue) return;
+                
+                const status = this.scene.effectsQueue.getStatus();
+                
+                this.elements.maxCascadeDepth.textContent = status.maxCascadeDepth;
+                this.elements.maxCascadeDuration.textContent = status.maxCascadeDuration + 'ms';
+                this.elements.explosionLimit.textContent = status.simultaneousExplosionLimit;
+                this.elements.fpsThreshold.textContent = status.frameDropThreshold;
+                this.elements.canContinue.textContent = status.canContinueCascade ? 'Yes' : 'No';
+                this.elements.canContinue.style.color = status.canContinueCascade ? '#2ecc71' : '#e74c3c';
+            }
+            
+            startStatusUpdates() {
+                this.updateInterval = setInterval(() => {
+                    if (this.scene && this.scene.effectsQueue) {
+                        const status = this.scene.effectsQueue.getStatus();
+                        
+                        // Update cascade stats
+                        this.elements.cascadeDepth.textContent = status.cascadeDepth;
+                        this.elements.chainCount.textContent = status.chainReactionCount;
+                        this.elements.currentFPS.textContent = status.currentFPS;
+                        this.elements.visualIntensity.textContent = Math.round(status.visualEffectIntensity * 100);
+                        this.elements.cascadeDuration.textContent = status.cascadeDuration;
+                        this.elements.processedTiles.textContent = status.cascadeHistory;
+                        
+                        // Update FPS indicator
+                        const fpsIndicator = this.elements.fpsIndicator;
+                        if (status.currentFPS >= 55) {
+                            fpsIndicator.className = 'performance-indicator good';
+                        } else if (status.currentFPS >= 45) {
+                            fpsIndicator.className = 'performance-indicator warning';
+                        } else {
+                            fpsIndicator.className = 'performance-indicator critical';
+                        }
+                        
+                        // Update safety limits
+                        this.updateSafetyLimits();
+                    }
+                }, 100);
+            }
+            
+            resetCascadeTracking() {
+                if (!this.scene || !this.scene.effectsQueue) {
+                    this.addToLog('EFFECTS-03: No effects queue available for reset');
+                    return;
+                }
+                
+                this.scene.effectsQueue.resetCascadeTracking();
+                this.addToLog('EFFECTS-03: Cascade tracking reset - all counters cleared');
+            }
+            
+            emergencyStop() {
+                if (!this.scene || !this.scene.effectsQueue) {
+                    this.addToLog('EFFECTS-03: No effects queue available for emergency stop');
+                    return;
+                }
+                
+                this.scene.effectsQueue.clearQueue();
+                this.scene.effectsQueue.resetCascadeTracking();
+                this.addToLog('EFFECTS-03: EMERGENCY STOP - All effects cleared and cascade tracking reset');
+            }
+            
+            // Test Methods
+            testSimpleCascade() {
+                if (!this.scene || !this.scene.grid) return;
+                
+                this.addToLog('EFFECTS-03: Testing simple cascade (2-3 levels)...');
+                
+                const allTiles = this.scene.grid.getAllTiles();
+                const centerTiles = allTiles.filter(tile => 
+                    tile.gridX >= 2 && tile.gridX <= 3 && 
+                    tile.gridY >= 2 && tile.gridY <= 3
+                ).slice(0, 2);
+                
+                if (centerTiles.length > 0) {
+                    this.scene.effectsQueue.triggerWordRipple(centerTiles);
+                    this.addToLog(`EFFECTS-03: Simple cascade initiated with ${centerTiles.length} tiles`);
+                }
+            }
+            
+            testComplexCascade() {
+                if (!this.scene || !this.scene.grid) return;
+                
+                this.addToLog('EFFECTS-03: Testing complex multi-level cascade...');
+                
+                const allTiles = this.scene.grid.getAllTiles();
+                const complexPattern = [];
+                
+                // Create a cross pattern for maximum cascade potential
+                for (let x = 1; x <= 4; x++) {
+                    for (let y = 1; y <= 4; y++) {
+                        if (x === 2 || y === 2) { // Cross pattern
+                            const tile = allTiles.find(t => t.gridX === x && t.gridY === y);
+                            if (tile) complexPattern.push(tile);
+                        }
+                    }
+                }
+                
+                if (complexPattern.length > 0) {
+                    this.scene.effectsQueue.triggerWordRipple(complexPattern.slice(0, 6));
+                    this.addToLog(`EFFECTS-03: Complex cascade initiated with ${complexPattern.length} tiles in cross pattern`);
+                }
+            }
+            
+            testChainReaction() {
+                if (!this.scene || !this.scene.grid) return;
+                
+                this.addToLog('EFFECTS-03: Testing chain reaction propagation...');
+                
+                const allTiles = this.scene.grid.getAllTiles();
+                const chainTiles = allTiles.filter(tile => 
+                    tile.gridX === 2 && tile.gridY >= 1 && tile.gridY <= 3
+                );
+                
+                if (chainTiles.length > 0) {
+                    // Pre-destabilize some tiles to ensure chain reactions
+                    chainTiles.forEach(tile => {
+                        tile.applySurge();
+                        tile.applySurge(); // 2 surges = ready to explode on next surge
+                    });
+                    
+                    this.scene.effectsQueue.triggerWordRipple([chainTiles[1]]); // Middle tile
+                    this.addToLog(`EFFECTS-03: Chain reaction test initiated - pre-destabilized ${chainTiles.length} tiles`);
+                }
+            }
+            
+            testPerformanceLimit() {
+                if (!this.scene || !this.scene.grid) return;
+                
+                this.addToLog('EFFECTS-03: Testing performance limit (simultaneous explosions)...');
+                
+                const allTiles = this.scene.grid.getAllTiles();
+                const performanceTiles = allTiles.slice(0, 15); // More than the limit of 8
+                
+                if (performanceTiles.length > 0) {
+                    this.scene.effectsQueue.triggerWordRipple(performanceTiles);
+                    this.addToLog(`EFFECTS-03: Performance test initiated with ${performanceTiles.length} tiles (limit: 8 per batch)`);
+                }
+            }
+            
+            testInfiniteLoop() {
+                if (!this.scene || !this.scene.grid) return;
+                
+                this.addToLog('EFFECTS-03: Testing infinite loop prevention...');
+                
+                const allTiles = this.scene.grid.getAllTiles();
+                
+                // Create a scenario that could potentially loop
+                const loopTiles = allTiles.filter(tile => 
+                    (tile.gridX >= 1 && tile.gridX <= 3) && 
+                    (tile.gridY >= 1 && tile.gridY <= 3)
+                );
+                
+                // Pre-destabilize all tiles in the area
+                loopTiles.forEach(tile => {
+                    tile.applySurge();
+                    tile.applySurge();
+                });
+                
+                if (loopTiles.length > 0) {
+                    this.scene.effectsQueue.triggerWordRipple([loopTiles[4]]); // Center tile
+                    this.addToLog(`EFFECTS-03: Infinite loop test initiated - watch for depth limit enforcement`);
+                }
+            }
+            
+            testDepthLimit() {
+                if (!this.scene || !this.scene.effectsQueue) return;
+                
+                this.addToLog('EFFECTS-03: Testing cascade depth limit enforcement...');
+                
+                // Temporarily reduce depth limit for testing
+                const originalLimit = this.scene.effectsQueue.maxCascadeDepth;
+                this.scene.effectsQueue.maxCascadeDepth = 5;
+                
+                this.testComplexCascade();
+                
+                setTimeout(() => {
+                    this.scene.effectsQueue.maxCascadeDepth = originalLimit;
+                    this.addToLog(`EFFECTS-03: Depth limit test complete - limit restored to ${originalLimit}`);
+                }, 5000);
+                
+                this.addToLog('EFFECTS-03: Depth limit temporarily set to 5 for testing');
+            }
+            
+            testTimeLimit() {
+                if (!this.scene || !this.scene.effectsQueue) return;
+                
+                this.addToLog('EFFECTS-03: Testing cascade time limit enforcement...');
+                
+                // Temporarily reduce time limit for testing
+                const originalLimit = this.scene.effectsQueue.maxCascadeDuration;
+                this.scene.effectsQueue.maxCascadeDuration = 3000; // 3 seconds
+                
+                this.testComplexCascade();
+                
+                setTimeout(() => {
+                    this.scene.effectsQueue.maxCascadeDuration = originalLimit;
+                    this.addToLog(`EFFECTS-03: Time limit test complete - limit restored to ${originalLimit}ms`);
+                }, 10000);
+                
+                this.addToLog('EFFECTS-03: Time limit temporarily set to 3000ms for testing');
+            }
+            
+            testAdaptivePerformance() {
+                if (!this.scene || !this.scene.effectsQueue) return;
+                
+                this.addToLog('EFFECTS-03: Testing adaptive performance system...');
+                
+                // Simulate performance degradation
+                const originalThreshold = this.scene.effectsQueue.frameDropThreshold;
+                this.scene.effectsQueue.frameDropThreshold = 70; // Higher threshold to trigger adaptation
+                
+                this.testComplexCascade();
+                
+                setTimeout(() => {
+                    this.scene.effectsQueue.frameDropThreshold = originalThreshold;
+                    this.addToLog(`EFFECTS-03: Adaptive performance test complete - threshold restored to ${originalThreshold}`);
+                }, 8000);
+                
+                this.addToLog('EFFECTS-03: FPS threshold temporarily raised to 70 to trigger adaptation');
+            }
+        }
+        
+        // Initialize the test app
+        const testApp = new AdvancedCascadeTestApp();
+    </script>
+</body>
+</html>

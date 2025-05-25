@@ -65,6 +65,7 @@ class Tile {
     getInitialHealth() {
         switch (this.type) {
             case TILE_TYPES.ICE:
+            case TILE_TYPES.HIDDEN:
                 return 2;
             case TILE_TYPES.STONE:
                 return 4;
@@ -103,6 +104,11 @@ class Tile {
         
         // Initialize visual state
         this.updateVisualState();
+        
+        // Create HP indicators for blocker tiles
+        if (this.type === TILE_TYPES.ICE || this.type === TILE_TYPES.STONE || this.type === TILE_TYPES.HIDDEN) {
+            this.createHPIndicators();
+        }
     }
     
     /**
@@ -194,17 +200,34 @@ class Tile {
                 this.textObject.setOrigin(0.5, 0.5);
                 this.container.add(this.textObject);
                 
-                // Emoji in lower left corner (relative to container)
-                this.emojiText = this.scene.add.text(
-                    -tileSize * 0.3, // Relative to container center
-                    tileSize * 0.25,
-                    this.getEmojiForType(),
-                    {
-                        fontSize: `${Math.floor(tileSize * 0.25)}px`
-                    }
-                );
-                this.emojiText.setOrigin(0.5, 0.5);
-                this.container.add(this.emojiText);
+                // For blocker tiles, position emoji in top-right corner
+                if (this.type === TILE_TYPES.ICE || this.type === TILE_TYPES.STONE || this.type === TILE_TYPES.HIDDEN) {
+                    this.emojiText = this.scene.add.text(
+                        tileSize * 0.3, // Top-right corner (relative to container center)
+                        -tileSize * 0.25,
+                        this.getEmojiForType(),
+                        {
+                            fontSize: `${Math.floor(tileSize * 0.25)}px`
+                        }
+                    );
+                    this.emojiText.setOrigin(0.5, 0.5);
+                    this.container.add(this.emojiText);
+                    
+                    // Add HP dots in bottom-left corner for blocker tiles
+                    this.createHPIndicators();
+                } else {
+                    // Non-blocker special tiles keep emoji in lower left
+                    this.emojiText = this.scene.add.text(
+                        -tileSize * 0.3, // Relative to container center
+                        tileSize * 0.25,
+                        this.getEmojiForType(),
+                        {
+                            fontSize: `${Math.floor(tileSize * 0.25)}px`
+                        }
+                    );
+                    this.emojiText.setOrigin(0.5, 0.5);
+                    this.container.add(this.emojiText);
+                }
                 
                 // Special indicator for multiplier
                 if (this.type === TILE_TYPES.MULTIPLIER) {
@@ -573,12 +596,15 @@ class Tile {
      * Apply surge effect (for ripple mechanics)
      */
     applySurge() {
-        this.surgeCount++;
-        
-        // Hidden tiles reveal after 3 surges
-        if (this.type === TILE_TYPES.HIDDEN && this.surgeCount >= 3) {
-            this.reveal();
+        // Blocker tiles (ICE/STONE/HIDDEN) take damage directly without surge effects
+        if (this.type === TILE_TYPES.ICE || this.type === TILE_TYPES.STONE || this.type === TILE_TYPES.HIDDEN) {
+            // Blocker tiles take damage when surged, no surge count or visual effects
+            this.takeDamage();
+            return;
         }
+        
+        // Normal tiles get surge effects
+        this.surgeCount++;
         
         // Update visual state to show surge progression
         this.updateVisualState();
@@ -633,10 +659,15 @@ class Tile {
      * @returns {boolean} True if tile is destroyed
      */
     takeDamage() {
-        if (this.type === TILE_TYPES.ICE || this.type === TILE_TYPES.STONE) {
+        if (this.type === TILE_TYPES.ICE || this.type === TILE_TYPES.STONE || this.type === TILE_TYPES.HIDDEN) {
             this.health--;
+            
+            // Update HP indicators to show reduced health
+            this.updateHPIndicators();
+            
             if (this.health <= 0) {
-                this.setState(TILE_STATES.EXPLODING);
+                // Convert blocker tile to normal tile instead of exploding
+                this.convertToNormalTile();
                 return true;
             }
         } else {
@@ -644,6 +675,45 @@ class Tile {
             return true;
         }
         return false;
+    }
+    
+    /**
+     * Convert blocker tile to normal tile when HP reaches 0
+     */
+    convertToNormalTile() {
+        // Remove blocker-specific visuals
+        this.removeHPIndicators();
+        if (this.emojiText) {
+            this.emojiText.destroy();
+            this.emojiText = null;
+        }
+        
+        // Clean up existing text elements before conversion
+        if (this.textObject) {
+            this.textObject.destroy();
+            this.textObject = null;
+        }
+        if (this.valueText) {
+            this.valueText.destroy();
+            this.valueText = null;
+        }
+        if (this.multiplierText) {
+            this.multiplierText.destroy();
+            this.multiplierText = null;
+        }
+        
+        // Convert to normal tile
+        const oldType = this.type;
+        this.type = TILE_TYPES.NORMAL;
+        this.health = 1; // Normal tiles have 1 HP
+        
+        // Recreate text content as normal tile
+        this.createText();
+        
+        // Update visual state
+        this.updateVisualState();
+        
+        console.log(`${oldType} tile converted to normal tile at (${this.gridX}, ${this.gridY})`);
     }
     
     /**
@@ -732,6 +802,56 @@ class Tile {
     }
     
     /**
+     * Create HP dot indicators for blocker tiles (bottom-left corner)
+     */
+    createHPIndicators() {
+        if (!this.container) return;
+        
+        const tileSize = this.tileSize;
+        const maxHP = this.getInitialHealth();
+        
+        // Remove existing HP indicators
+        this.removeHPIndicators();
+        
+        // Create HP dots array
+        this.hpIndicators = [];
+        
+        for (let i = 0; i < this.health; i++) {
+            const dot = this.scene.add.circle(
+                -tileSize * 0.35 + (i * 6), // Bottom-left corner, spaced horizontally
+                tileSize * 0.3,
+                2,
+                0x555555 // Dark grey color
+            );
+            this.hpIndicators.push(dot);
+            this.container.add(dot); // Add to container so it moves with the tile
+        }
+    }
+    
+    /**
+     * Remove HP dot indicators
+     */
+    removeHPIndicators() {
+        if (this.hpIndicators) {
+            this.hpIndicators.forEach(dot => {
+                if (dot && dot.destroy) {
+                    dot.destroy();
+                }
+            });
+            this.hpIndicators = [];
+        }
+    }
+    
+    /**
+     * Update HP indicators when health changes
+     */
+    updateHPIndicators() {
+        if (this.type === TILE_TYPES.ICE || this.type === TILE_TYPES.STONE || this.type === TILE_TYPES.HIDDEN) {
+            this.createHPIndicators();
+        }
+    }
+    
+    /**
      * Add wobble animation for surge level 2 (from demo)
      */
     addWobbleAnimation() {
@@ -776,6 +896,7 @@ class Tile {
         // Stop animations and remove indicators
         this.stopSurgeAnimations();
         this.removeSurgeIndicators();
+        this.removeHPIndicators();
         
         // Destroy the container - this will destroy all child elements automatically
         if (this.container) {

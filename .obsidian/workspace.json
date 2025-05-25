@@ -177,6 +177,7 @@
   },
   "active": "dba328133ee3b571",
   "lastOpenFiles": [
+    "tests/test-advanced-cascades.html",
     "word-match-simple-polish-demo.html",
     "index.html",
     "word-match-style-guide.md",
@@ -191,7 +192,6 @@
     "tests/test-ui-hud.html",
     "tests/test-special-tiles.html",
     "tests/test-special-tiles-playable.html",
-    "tests/test-scoring-playable.html",
-    "tests/test-ripple-effects.html"
+    "tests/test-scoring-playable.html"
   ]
 }
