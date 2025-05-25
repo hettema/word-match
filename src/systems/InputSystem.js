@@ -91,6 +91,8 @@ class InputSystem {
      * @param {Phaser.Input.Pointer} pointer - Pointer event
      */
     startTrace(pointer) {
+        
+        
         // Don't start tracing if input is disabled or game is animating
         if (!this.enabled) return;
         
@@ -105,11 +107,15 @@ class InputSystem {
         }
         
         const tile = this.getTileAt(pointer.x, pointer.y);
+        
+        
         if (tile && tile.canBeSelected()) {
             this.isTracing = true;
             this.selectedTiles = [tile];
             this.currentWord = tile.letter;
             this.linePoints = [{ x: tile.worldX, y: tile.worldY }];
+            
+            
             
             // Initialize smoothed pointer to current position
             this.smoothPointer.x = pointer.x;
@@ -144,6 +150,8 @@ class InputSystem {
         this.clearHoverHighlights();
         
         if (tile) {
+            
+            
             if (this.canAddTile(tile)) {
                 // Add tile to selection
                 this.selectedTiles.push(tile);
@@ -153,17 +161,21 @@ class InputSystem {
                 tile.setSelected(true);
                 this.updateTracingLine();
                 
+                
+                
                 // Emit tile added event
                 this.scene.events.emit('tileAdded', tile, this.currentWord);
                 
             } else if (this.canRemoveTile(tile)) {
                 // Remove tiles back to this one (backtracking)
+                
                 this.backtrackToTile(tile);
                 
             } else if (tile.canBeSelected() && !this.selectedTiles.includes(tile)) {
                 // Show hover highlight for valid adjacent tiles
                 if (this.isAdjacentToLast(tile)) {
                     tile.setHighlighted(true);
+                    
                 }
             }
         }
@@ -214,31 +226,66 @@ class InputSystem {
      * @returns {Tile|null} Tile at position or null
      */
     getTileAt(worldX, worldY) {
-        const gridPos = this.grid.worldToGridPosition(worldX, worldY);
-        if (!gridPos) {
-            console.log('DEBUG: worldToGridPosition returned null for', worldX, worldY);
-            return null;
-        }
-        
-        const tile = this.grid.getTileAt(gridPos.x, gridPos.y);
-        if (!tile) {
-            console.log('DEBUG: No tile found at grid position', gridPos.x, gridPos.y);
-            return null;
-        }
-        
-        // Check if pointer is within tile bounds (with tolerance for touch)
-        const dx = Math.abs(worldX - tile.worldX);
-        const dy = Math.abs(worldY - tile.worldY);
+        // Use a more generous hit detection approach
         const tileSize = this.scene.registry.get('settings')?.display?.tileSize || 64;
-        const maxDistance = (tileSize / 2) + this.touchTolerance;
+        const tolerance = this.touchTolerance;
         
-        console.log('DEBUG: Tile bounds check - dx:', dx, 'dy:', dy, 'maxDistance:', maxDistance, 'tile at:', tile.gridX, tile.gridY, 'canBeSelected:', tile.canBeSelected());
+        // Check multiple grid positions around the click point
+        const candidates = [];
         
-        if (dx <= maxDistance && dy <= maxDistance) {
-            return tile;
+        // Primary position
+        const gridPos = this.grid.worldToGridPosition(worldX, worldY);
+        if (gridPos) {
+            const tile = this.grid.getTileAt(gridPos.x, gridPos.y);
+            if (tile) {
+                const dx = Math.abs(worldX - tile.worldX);
+                const dy = Math.abs(worldY - tile.worldY);
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                candidates.push({ tile, distance });
+            }
         }
         
-        console.log('DEBUG: Tile outside bounds - rejecting');
+        // Check adjacent positions if primary failed or for better accuracy
+        const offsets = [
+            [-tolerance, -tolerance], [0, -tolerance], [tolerance, -tolerance],
+            [-tolerance, 0],                          [tolerance, 0],
+            [-tolerance, tolerance],  [0, tolerance],  [tolerance, tolerance]
+        ];
+        
+        for (const [offsetX, offsetY] of offsets) {
+            const testPos = this.grid.worldToGridPosition(worldX + offsetX, worldY + offsetY);
+            if (testPos && (testPos.x !== gridPos?.x || testPos.y !== gridPos?.y)) {
+                const tile = this.grid.getTileAt(testPos.x, testPos.y);
+                if (tile) {
+                    const dx = Math.abs(worldX - tile.worldX);
+                    const dy = Math.abs(worldY - tile.worldY);
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    const maxDistance = (tileSize / 2) + tolerance;
+                    
+                    if (distance <= maxDistance) {
+                        candidates.push({ tile, distance });
+                    }
+                }
+            }
+        }
+        
+        // Return the closest valid candidate
+        if (candidates.length > 0) {
+            candidates.sort((a, b) => a.distance - b.distance);
+            const bestTile = candidates[0].tile;
+            
+            
+            return bestTile;
+        }
+        
+        // Debug: Check if there are tiles that can't be selected
+        const debugPos = this.grid.worldToGridPosition(worldX, worldY);
+        if (debugPos) {
+            const debugTile = this.grid.getTileAt(debugPos.x, debugPos.y);
+            
+        }
+        
+        
         return null;
     }
     
@@ -343,7 +390,12 @@ class InputSystem {
         if (this.selectedTiles.length === 0) return true;
         
         const lastTile = this.selectedTiles[this.selectedTiles.length - 1];
-        return this.grid.areAdjacent(lastTile, tile);
+        const isAdjacent = this.grid.areAdjacent(lastTile, tile);
+        
+        // Debug: Show neighbors of the last selected tile
+        
+        
+        return isAdjacent;
     }
     
     /**

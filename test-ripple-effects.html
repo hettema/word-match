@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ripple Effects & Cascade Mechanics Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background-color: #2c3e50;
+            color: white;
+        }
+        
+        .controls {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #34495e;
+            border-radius: 8px;
+        }
+        
+        .controls button {
+            margin: 5px;
+            padding: 8px 16px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .controls button:hover {
+            background-color: #2980b9;
+        }
+        
+        .info {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #34495e;
+            border-radius: 8px;
+        }
+        
+        .info h3 {
+            margin-top: 0;
+            color: #3498db;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .stat-item {
+            background-color: #2c3e50;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        
+        #game-container {
+            border: 2px solid #34495e;
+            border-radius: 8px;
+            overflow: visible;
+        }
+        
+        /* CRITICAL FIX: Prevent touch/pointer interference */
+        #game-container canvas {
+            touch-action: none !important;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        /* Ensure no parent elements interfere */
+        body, html {
+            touch-action: manipulation;
+        }
+    </style>
+</head>
+<body>
+    <h1>🌊 Ripple Effects & Cascade Mechanics Test</h1>
+    
+    <div class="controls">
+        <h3>Test Controls</h3>
+        <p><strong>🖱️ DRAG across tiles to trace words (don't just click)!</strong></p>
+        <p><em>Click and drag from one tile to adjacent tiles to form words like "SEE", "ARE", "THE", etc.</em></p>
+        <button onclick="triggerRandomRipple()">🌊 Random Ripple</button>
+        <button onclick="triggerCenterRipple()">🎯 Center Ripple</button>
+        <button onclick="triggerMultipleRipples()">💥 Multiple Ripples</button>
+        <button onclick="triggerBombExplosion()">💣 Bomb Test</button>
+        <button onclick="resetGrid()">🔄 Reset Grid</button>
+        <button onclick="showCascadePotential()">📊 Cascade Analysis</button>
+    </div>
+    
+    <div id="game-container"></div>
+    
+    <div class="info">
+        <h3>Ripple Effects & Cascade Mechanics</h3>
+        <p><strong>Features being tested:</strong></p>
+        <ul>
+            <li>🌊 <strong>Ripple Spread:</strong> Configurable percentage chance for ripples to spread to neighbors</li>
+            <li>⚡ <strong>Surge Accumulation:</strong> Tiles accumulate surge power when affected by ripples</li>
+            <li>💥 <strong>Destabilization:</strong> Tiles destabilize after reaching threshold (default 3 surges)</li>
+            <li>🔗 <strong>Chain Reactions:</strong> Destabilized tiles explode and trigger new ripples</li>
+            <li>🪨 <strong>Gravity System:</strong> Tiles fall and grid refills after explosions</li>
+            <li>🎯 <strong>Special Tiles:</strong> Bomb tiles create larger explosions</li>
+        </ul>
+        
+        <div class="stats" id="stats-container">
+            <!-- Stats will be populated by JavaScript -->
+        </div>
+    </div>
+
+    <!-- Load game files -->
+    <script src="src/core/Tile.js"></script>
+    <script src="src/core/Grid.js"></script>
+    <script src="src/systems/EffectsQueue.js"></script>
+    <script src="src/systems/WordValidator.js"></script>
+    <script src="src/systems/InputSystem.js"></script>
+    <script src="src/utils/LevelLoader.js"></script>
+
+    <script>
+        let game;
+        let testScene;
+        let grid;
+        let effectsQueue;
+        let inputSystem;
+        let wordValidator;
+        let levelConfig;
+
+        class RippleTestScene extends Phaser.Scene {
+            constructor() {
+                super({ key: 'RippleTestScene' });
+            }
+
+            preload() {
+                // Set up fallback config immediately
+                const fallbackConfig = {
+                    gridSize: { width: 6, height: 6 },
+                    ripple: { spread: 0.5, power: 1, threshold: 3 },
+                    specialTiles: { bomb: 0.1, ice: 0.05, stone: 0.03, multiplier: 0.02, hidden: 0.05 },
+                    tileDistribution: 'scrabble_uk',
+                    tileDistributionData: {
+                        'A': { count: 9, value: 1 }, 'E': { count: 12, value: 1 },
+                        'I': { count: 9, value: 1 }, 'O': { count: 8, value: 1 },
+                        'U': { count: 4, value: 1 }, 'L': { count: 4, value: 1 },
+                        'N': { count: 6, value: 1 }, 'R': { count: 6, value: 1 },
+                        'S': { count: 4, value: 1 }, 'T': { count: 6, value: 1 }
+                    }
+                };
+                const fallbackSettings = {
+                    display: { tileSize: 64, gridPadding: 10 },
+                    effects: { animationSpeed: 1.0, particleCount: 20, explosionDuration: 500 },
+                    input: { selectionHighlightColor: '#e74c3c', hoverHighlightColor: '#f39c12' }
+                };
+                
+                this.registry.set('levelConfig', fallbackConfig);
+                this.registry.set('settings', fallbackSettings);
+                
+                console.log('Fallback config set:', fallbackConfig);
+                
+                // Try to load real config asynchronously
+                this.loadRealConfig();
+            }
+            
+            async loadRealConfig() {
+                try {
+                    const levelConfig = await LevelLoader.load(1);
+                    const settings = await LevelLoader.loadSettings();
+                    
+                    // Update registry with real config
+                    this.registry.set('settings', settings);
+                    this.registry.set('levelConfig', levelConfig);
+                    
+                    console.log('Real level config loaded:', levelConfig);
+                } catch (error) {
+                    console.error('Failed to load real configurations, using fallback:', error);
+                }
+            }
+
+            async create() {
+                console.log('Creating ripple test scene...');
+                
+                try {
+                    // Initialize word validator first
+                    wordValidator = new WordValidator();
+                    const loadSuccess = await wordValidator.load();
+                    if (!loadSuccess) {
+                        console.warn('Failed to load dictionary, using fallback');
+                    }
+                    this.registry.set('wordValidator', wordValidator);
+                    
+                    // Create effects queue
+                    effectsQueue = new EffectsQueue(this);
+                    this.registry.set('effectsQueue', effectsQueue);
+                    
+                    // Create grid with the loaded config
+                    const config = this.registry.get('levelConfig');
+                    console.log('Creating grid with config:', config);
+                    if (!config || !config.gridSize) {
+                        throw new Error('Invalid level config for grid creation');
+                    }
+                    grid = new Grid(this, config);
+                    this.registry.set('grid', grid);
+                    
+                    // Create input system for word tracing
+                    inputSystem = new InputSystem(this, grid);
+                    this.registry.set('inputSystem', inputSystem);
+                    
+                    // CRITICAL FIX: Setup pointer capture for bottom row input
+                    this.setupPointerCapture();
+                    
+                    // Set up event listeners
+                    effectsQueue.events.on('cascade-complete', () => {
+                        console.log('Cascade sequence completed');
+                        updateStats();
+                    });
+                    
+                    effectsQueue.events.on('effect-start', (effect) => {
+                        console.log(`Effect started: ${effect.type}`);
+                    });
+                    
+                    effectsQueue.events.on('queue-empty', () => {
+                        console.log('Effects queue is empty');
+                        updateStats();
+                    });
+                    
+                    // Word submission event
+                    this.events.on('wordSubmitted', (wordData) => {
+                        const { word, tiles } = wordData;
+                        const isValid = wordValidator && wordValidator.isValid(word);
+                        
+                        console.log(`Word submitted: "${word}" (${isValid ? 'valid' : 'invalid'})`);
+                        
+                        if (isValid && tiles.length > 0) {
+                            // Trigger ripple effects for valid word
+                            effectsQueue.triggerWordRipple(tiles);
+                        } else {
+                            console.log('Invalid word or no tiles selected');
+                            grid.clearSelection();
+                        }
+                    });
+                    
+                    // Create status text
+                    this.statusText = this.add.text(10, this.scale.height - 30, 'Trace words to trigger ripple effects!', {
+                        fontSize: '16px',
+                        fontFamily: 'Arial, sans-serif',
+                        color: '#ecf0f1',
+                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                        padding: { x: 8, y: 4 }
+                    });
+                    
+                    // Initial stats update
+                    updateStats();
+                    
+                    console.log('Ripple test scene created successfully');
+                    
+                } catch (error) {
+                    console.error('Error creating test scene:', error);
+                }
+            }
+            
+            setupPointerCapture() {
+                const canvas = this.game.canvas;
+                
+                // Prevent default behaviors that interfere with dragging
+                canvas.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+                canvas.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+                canvas.addEventListener('mousedown', (e) => e.preventDefault());
+                canvas.addEventListener('selectstart', (e) => e.preventDefault());
+                canvas.addEventListener('dragstart', (e) => e.preventDefault());
+                
+                // Force pointer capture on drag for reliable event handling
+                this.input.on('pointerdown', (pointer) => {
+                    if (pointer.event && pointer.event.pointerId !== undefined) {
+                        canvas.setPointerCapture(pointer.event.pointerId);
+                    }
+                });
+                
+                this.input.on('pointerup', (pointer) => {
+                    if (pointer.event && pointer.event.pointerId !== undefined) {
+                        try {
+                            canvas.releasePointerCapture(pointer.event.pointerId);
+                        } catch (e) {
+                            // Ignore if already released
+                        }
+                    }
+                });
+            }
+
+            update() {
+                // Update loop if needed
+            }
+        }
+
+        // Initialize the game
+        const config = {
+            type: Phaser.AUTO,
+            width: 800,
+            height: 600,
+            parent: 'game-container',
+            backgroundColor: '#2c3e50',
+            scene: RippleTestScene,
+            input: {
+                activePointers: 3 // Support multi-touch like working test-input
+            },
+            physics: {
+                default: 'arcade',
+                arcade: { debug: false }
+            }
+        };
+
+        game = new Phaser.Game(config);
+
+        // Test functions
+        function triggerRandomRipple() {
+            if (!grid) return;
+            
+            const allTiles = grid.getAllTiles();
+            if (allTiles.length === 0) return;
+            
+            const randomTile = allTiles[Math.floor(Math.random() * allTiles.length)];
+            console.log(`Triggering random ripple at (${randomTile.gridX}, ${randomTile.gridY})`);
+            
+            effectsQueue.addEffect({
+                type: 'ripple',
+                targets: [randomTile],
+                params: { testRipple: true }
+            });
+        }
+
+        function triggerCenterRipple() {
+            if (!grid) return;
+            
+            const centerX = Math.floor(grid.width / 2);
+            const centerY = Math.floor(grid.height / 2);
+            const centerTile = grid.getTileAt(centerX, centerY);
+            
+            if (centerTile) {
+                console.log(`Triggering center ripple at (${centerX}, ${centerY})`);
+                effectsQueue.addEffect({
+                    type: 'ripple',
+                    targets: [centerTile],
+                    params: { testRipple: true }
+                });
+            }
+        }
+
+        function triggerMultipleRipples() {
+            if (!grid) return;
+            
+            const allTiles = grid.getAllTiles();
+            if (allTiles.length < 3) return;
+            
+            // Select 3 random tiles
+            const selectedTiles = [];
+            for (let i = 0; i < 3; i++) {
+                const randomTile = allTiles[Math.floor(Math.random() * allTiles.length)];
+                if (!selectedTiles.includes(randomTile)) {
+                    selectedTiles.push(randomTile);
+                }
+            }
+            
+            console.log(`Triggering multiple ripples at ${selectedTiles.length} locations`);
+            
+            effectsQueue.addEffect({
+                type: 'ripple',
+                targets: selectedTiles,
+                params: { multipleRipple: true }
+            });
+        }
+
+        function triggerBombExplosion() {
+            if (!grid) return;
+            
+            // Find a bomb tile or create one
+            let bombTile = grid.getAllTiles().find(tile => tile.type === TILE_TYPES.BOMB);
+            
+            if (!bombTile) {
+                // Create a bomb tile in the center
+                const centerX = Math.floor(grid.width / 2);
+                const centerY = Math.floor(grid.height / 2);
+                const centerTile = grid.getTileAt(centerX, centerY);
+                
+                if (centerTile) {
+                    centerTile.type = TILE_TYPES.BOMB;
+                    centerTile.sprite.setFillStyle(0xe74c3c); // Red color for bomb
+                    bombTile = centerTile;
+                }
+            }
+            
+            if (bombTile) {
+                console.log(`Triggering bomb explosion at (${bombTile.gridX}, ${bombTile.gridY})`);
+                
+                // Trigger ripple effect on bomb tile
+                effectsQueue.addEffect({
+                    type: 'ripple',
+                    targets: [bombTile],
+                    params: { bombTest: true }
+                });
+            }
+        }
+
+        function resetGrid() {
+            if (!grid) return;
+            
+            console.log('Resetting grid...');
+            
+            // Reset surge counts and states
+            grid.resetSurgeCounts();
+            
+            // Clear effects queue
+            effectsQueue.clearQueue();
+            
+            updateStats();
+        }
+
+        function showCascadePotential() {
+            if (!grid) return;
+            
+            const potential = grid.getCascadePotential();
+            console.log('Cascade Potential Analysis:', potential);
+            
+            alert(`Cascade Analysis:
+Total Tiles: ${potential.total}
+Normal: ${potential.normal}
+Surged: ${potential.surged}
+Near Destabilization: ${potential.nearDestabilization}
+Destabilized: ${potential.destabilized}
+Average Surge Count: ${potential.averageSurgeCount.toFixed(2)}`);
+        }
+
+        function updateStats() {
+            if (!grid || !effectsQueue) return;
+            
+            const stats = grid.getStats();
+            const potential = grid.getCascadePotential();
+            const queueStatus = effectsQueue.getStatus();
+            
+            const statsContainer = document.getElementById('stats-container');
+            statsContainer.innerHTML = `
+                <div class="stat-item">
+                    <strong>Grid Stats</strong><br>
+                    Total Tiles: ${stats.totalTiles}<br>
+                    Empty Spaces: ${stats.emptySpaces}
+                </div>
+                <div class="stat-item">
+                    <strong>Tile States</strong><br>
+                    Normal: ${stats.tilesByState.normal || 0}<br>
+                    Destabilized: ${stats.tilesByState.destabilized || 0}<br>
+                    Exploding: ${stats.tilesByState.exploding || 0}<br>
+                    Falling: ${stats.tilesByState.falling || 0}
+                </div>
+                <div class="stat-item">
+                    <strong>Special Tiles</strong><br>
+                    Bomb: ${stats.tilesByType.BOMB || 0}<br>
+                    Ice: ${stats.tilesByType.ICE || 0}<br>
+                    Stone: ${stats.tilesByType.STONE || 0}<br>
+                    Multiplier: ${stats.tilesByType.MULTIPLIER || 0}<br>
+                    Hidden: ${stats.tilesByType.HIDDEN || 0}
+                </div>
+                <div class="stat-item">
+                    <strong>Cascade Potential</strong><br>
+                    Near Destabilization: ${potential.nearDestabilization}<br>
+                    Avg Surge Count: ${potential.averageSurgeCount.toFixed(2)}<br>
+                    Destabilized: ${potential.destabilized}
+                </div>
+                <div class="stat-item">
+                    <strong>Effects Queue</strong><br>
+                    Queue Length: ${queueStatus.queueLength}<br>
+                    Processing: ${queueStatus.isProcessing ? 'Yes' : 'No'}<br>
+                    Current Effect: ${queueStatus.currentEffect || 'None'}<br>
+                    Effects Processed: ${queueStatus.effectsProcessed}
+                </div>
+                <div class="stat-item">
+                    <strong>Ripple Config</strong><br>
+                    Spread Chance: ${(levelConfig?.ripple?.spread || 0.5) * 100}%<br>
+                    Power: ${levelConfig?.ripple?.power || 1}<br>
+                    Threshold: ${levelConfig?.ripple?.threshold || 3}
+                </div>
+            `;
+        }
+
+        // Update stats every 2 seconds
+        setInterval(updateStats, 2000);
+    </script>
+</body>
+</html>

@@ -27,7 +27,7 @@ class EffectsQueue {
         this.particleCount = settings.effects?.particleCount || 20;
         this.explosionDuration = settings.effects?.explosionDuration || 500;
         
-        console.log('EffectsQueue initialized');
+        
     }
     
     /**
@@ -55,7 +55,32 @@ class EffectsQueue {
             this.processNext();
         }
         
-        console.log(`Effect added to queue: ${effect.type} (${effect.targets.length} targets)`);
+        
+    }
+    
+    /**
+     * Trigger ripple effects from word submission
+     * @param {Array} wordTiles - Tiles that formed the word
+     */
+    triggerWordRipple(wordTiles) {
+        if (!wordTiles || wordTiles.length === 0) return;
+        
+        
+        
+        // Start with explosion of word tiles
+        this.addEffect({
+            type: 'explosion',
+            targets: wordTiles,
+            params: { wordExplosion: true },
+            callback: () => {
+                // After word explosion, trigger ripple effects
+                this.addEffect({
+                    type: 'ripple',
+                    targets: wordTiles,
+                    params: { initialRipple: true }
+                });
+            }
+        });
     }
     
     /**
@@ -113,6 +138,9 @@ class EffectsQueue {
         switch (effect.type) {
             case 'explosion':
                 await this.processExplosion(effect);
+                break;
+            case 'ripple':
+                await this.processRipple(effect);
                 break;
             case 'cascade':
                 await this.processCascade(effect);
@@ -256,6 +284,243 @@ class EffectsQueue {
                     await this.delay(delay);
                 }
             }
+        }
+    }
+    
+    /**
+     * Process ripple effect with surge accumulation and chain reactions
+     * @param {Object} effect - Ripple effect configuration
+     */
+    async processRipple(effect) {
+        const { targets, params = {} } = effect;
+        const grid = this.scene.registry.get('grid');
+        const levelConfig = this.scene.registry.get('levelConfig');
+        
+        if (!grid || !levelConfig) {
+            console.error('Grid or level config not found for ripple effect');
+            return;
+        }
+        
+        // Get ripple configuration
+        const rippleConfig = levelConfig.ripple || {};
+        const spreadChance = rippleConfig.spread || 0.5;
+        const ripplePower = rippleConfig.power || 1;
+        const threshold = rippleConfig.threshold || 3;
+        
+        console.log(`Processing ripple effect: ${targets.length} initial targets, spread: ${spreadChance}`);
+        
+        // Track affected tiles to prevent infinite loops
+        const processedTiles = new Set();
+        const tilesToExplode = [];
+        
+        // Process initial ripple wave
+        for (const tile of targets) {
+            if (!tile || processedTiles.has(`${tile.gridX},${tile.gridY}`)) continue;
+            
+            processedTiles.add(`${tile.gridX},${tile.gridY}`);
+            
+            // Apply surge to the tile - this handles destabilization logic internally
+            for (let i = 0; i < ripplePower; i++) {
+                tile.applySurge();
+            }
+            
+            // Check if tile is now exploding (was destabilized and got another surge)
+            if (tile.state === TILE_STATES.EXPLODING) {
+                tilesToExplode.push(tile);
+            }
+            
+            // Create visual ripple effect
+            this.createRippleVisual(tile);
+            
+            // Get neighbors for potential spread
+            const neighbors = grid.getNeighbors(tile.gridX, tile.gridY);
+            
+            // Apply ripple spread to neighbors
+            for (const neighbor of neighbors) {
+                if (processedTiles.has(`${neighbor.gridX},${neighbor.gridY}`)) continue;
+                
+                // Check spread probability
+                if (Math.random() < spreadChance) {
+                    processedTiles.add(`${neighbor.gridX},${neighbor.gridY}`);
+                    
+                    // Apply surge to neighbor - this handles destabilization logic internally
+                    neighbor.applySurge();
+                    
+                    // Check if neighbor is now exploding
+                    if (neighbor.state === TILE_STATES.EXPLODING) {
+                        tilesToExplode.push(neighbor);
+                    }
+                    
+                    // Create visual ripple effect for neighbor
+                    this.createRippleVisual(neighbor, 100); // Slight delay for wave effect
+                }
+            }
+        }
+        
+        // Wait for ripple visuals to complete
+        await this.delay(300);
+        
+        // Trigger explosions for tiles that are now exploding
+        if (tilesToExplode.length > 0) {
+            // Trigger explosions for exploding tiles
+            this.addEffect({
+                type: 'explosion',
+                targets: tilesToExplode,
+                params: { chainReaction: true },
+                callback: () => {
+                    // After explosions, check for more chain reactions
+                    this.checkForChainReactions(tilesToExplode);
+                }
+            });
+        } else {
+            // No explosions, trigger gravity immediately
+            this.triggerGravitySequence();
+        }
+    }
+    
+    /**
+     * Create visual ripple effect
+     * @param {Tile} tile - The tile to create ripple effect for
+     * @param {number} delay - Delay before showing effect
+     */
+    createRippleVisual(tile, delay = 0) {
+        if (!tile || !tile.worldX || !tile.worldY) return;
+        
+        const createRipple = () => {
+            // Create expanding circle for ripple effect
+            const ripple = this.scene.add.circle(
+                tile.worldX,
+                tile.worldY,
+                5,
+                0x3498db,
+                0.6
+            );
+            
+            // Animate ripple expansion
+            this.scene.tweens.add({
+                targets: ripple,
+                radius: 40,
+                alpha: 0,
+                duration: 400,
+                ease: 'Power2',
+                onComplete: () => ripple.destroy()
+            });
+        };
+        
+        if (delay > 0) {
+            this.scene.time.delayedCall(delay, createRipple);
+        } else {
+            createRipple();
+        }
+    }
+    
+    /**
+     * Check for additional chain reactions after explosions
+     * @param {Array} explodedTiles - Tiles that just exploded
+     */
+    checkForChainReactions(explodedTiles) {
+        const grid = this.scene.registry.get('grid');
+        if (!grid) return;
+        
+        // Collect all neighbors of exploded tiles and apply surge effects
+        const affectedNeighbors = new Set();
+        
+        explodedTiles.forEach(tile => {
+            const neighbors = grid.getNeighbors(tile.gridX, tile.gridY);
+            neighbors.forEach(neighbor => {
+                if (neighbor.state !== TILE_STATES.EXPLODING && neighbor.state !== TILE_STATES.FALLING) {
+                    affectedNeighbors.add(neighbor);
+                }
+            });
+        });
+        
+        // Apply surge to all affected neighbors (this creates proper chain reactions!)
+        const tilesToExplode = [];
+        Array.from(affectedNeighbors).forEach(neighbor => {
+            neighbor.applySurge();
+            
+            // Check if neighbor is now exploding due to the surge
+            if (neighbor.state === TILE_STATES.EXPLODING) {
+                tilesToExplode.push(neighbor);
+            }
+        });
+        
+        if (tilesToExplode.length > 0) {
+            // Continue chain reaction with newly exploding tiles
+            this.addEffect({
+                type: 'explosion',
+                targets: tilesToExplode,
+                params: { chainReaction: true },
+                callback: () => {
+                    // Recursively check for more chain reactions
+                    this.checkForChainReactions(tilesToExplode);
+                }
+            });
+        } else {
+            // No more explosions, apply gravity
+            this.triggerGravitySequence();
+        }
+    }
+    
+    /**
+     * Trigger the complete gravity sequence (drop tiles, refill grid)
+     */
+    triggerGravitySequence() {
+        const grid = this.scene.registry.get('grid');
+        if (!grid) return;
+        
+        console.log('Triggering gravity sequence');
+        
+        // Apply gravity to drop existing tiles
+        const movements = grid.applyGravity();
+        
+        if (movements.length > 0) {
+            // Animate falling tiles
+            this.addEffect({
+                type: 'gravity',
+                targets: movements,
+                params: { duration: 300 },
+                callback: () => {
+                    // After gravity, refill empty spaces
+                    this.refillEmptySpaces();
+                }
+            });
+        } else {
+            // No tiles to drop, go straight to refill
+            this.refillEmptySpaces();
+        }
+    }
+    
+    /**
+     * Refill empty spaces in the grid
+     */
+    refillEmptySpaces() {
+        const grid = this.scene.registry.get('grid');
+        if (!grid) return;
+        
+        console.log('Refilling empty spaces');
+        
+        // Create new tiles for empty spaces
+        const newTiles = grid.refillGrid();
+        
+        if (newTiles.length > 0) {
+            // Animate new tiles spawning
+            this.addEffect({
+                type: 'spawn',
+                targets: newTiles,
+                params: {
+                    duration: 200,
+                    staggerDelay: 50
+                },
+                callback: () => {
+                    console.log('Cascade sequence complete');
+                    // Emit event that cascade is complete
+                    this.events.emit('cascade-complete');
+                }
+            });
+        } else {
+            console.log('Cascade sequence complete - no refill needed');
+            this.events.emit('cascade-complete');
         }
     }
     

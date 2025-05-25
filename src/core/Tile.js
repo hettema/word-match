@@ -178,13 +178,43 @@ class Tile {
         this.sprite.setScale(1);
         this.sprite.setAlpha(1); // Reset alpha
         
-        // Reset fill color to original
-        this.sprite.setFillStyle(this.getTileColor());
+        // Get base color and apply surge progression
+        let baseColor = this.getTileColor();
+        
+        // Apply surge progression visual feedback for all states except exploding
+        if (this.surgeCount > 0 && this.state !== TILE_STATES.EXPLODING) {
+            const levelConfig = this.scene.registry.get('levelConfig');
+            const threshold = levelConfig?.ripple?.threshold || 3;
+            
+            // More visible color progression - stronger blends
+            if (this.surgeCount === 1) {
+                // Stage 1: Yellow tint (1 surge) - 60% blend for visibility
+                baseColor = this.blendColors(baseColor, 0xf39c12, 0.6);
+            } else if (this.surgeCount === 2) {
+                // Stage 2: Orange tint (2 surges) - 75% blend
+                baseColor = this.blendColors(baseColor, 0xe67e22, 0.75);
+            } else if (this.surgeCount >= threshold - 1) {
+                // Stage 3: Red tint (at or near threshold) - 85% blend
+                baseColor = this.blendColors(baseColor, 0xe74c3c, 0.85);
+            }
+        }
+        
+        // Set the calculated color
+        this.sprite.setFillStyle(baseColor);
         
         // Apply state-specific visual effects
         switch (this.state) {
             case TILE_STATES.DESTABILIZED:
-                this.sprite.setFillStyle(0xff6b6b); // Light red color
+                // Don't override the color - keep the progressive surge color
+                // Only add pulsing effect for destabilized tiles
+                this.scene.tweens.add({
+                    targets: this.sprite,
+                    scale: { from: 1, to: 1.05 },
+                    duration: 300,
+                    yoyo: true,
+                    repeat: -1,
+                    ease: 'Sine.easeInOut'
+                });
                 break;
             case TILE_STATES.EXPLODING:
                 this.sprite.setFillStyle(0xff4757); // Red color
@@ -207,6 +237,29 @@ class Tile {
         } else {
             this.sprite.setStrokeStyle(2, 0x34495e);
         }
+    }
+    
+    /**
+     * Blend two colors together
+     * @param {number} color1 - First color (hex)
+     * @param {number} color2 - Second color (hex)
+     * @param {number} ratio - Blend ratio (0-1)
+     * @returns {number} Blended color
+     */
+    blendColors(color1, color2, ratio) {
+        const r1 = (color1 >> 16) & 0xff;
+        const g1 = (color1 >> 8) & 0xff;
+        const b1 = color1 & 0xff;
+        
+        const r2 = (color2 >> 16) & 0xff;
+        const g2 = (color2 >> 8) & 0xff;
+        const b2 = color2 & 0xff;
+        
+        const r = Math.round(r1 + (r2 - r1) * ratio);
+        const g = Math.round(g1 + (g2 - g1) * ratio);
+        const b = Math.round(b1 + (b2 - b1) * ratio);
+        
+        return (r << 16) | (g << 8) | b;
     }
     
     /**
@@ -238,11 +291,18 @@ class Tile {
             this.reveal();
         }
         
-        // Check if tile should destabilize
+        // Update visual state to show surge progression
+        this.updateVisualState();
+        
+        // Check if tile should destabilize or explode
         const settings = this.scene.registry.get('levelConfig');
         const threshold = settings?.ripple?.threshold || 3;
         
-        if (this.surgeCount >= threshold && this.state === TILE_STATES.NORMAL) {
+        if (this.state === TILE_STATES.DESTABILIZED) {
+            // Destabilized tiles explode on any surge
+            this.setState(TILE_STATES.EXPLODING);
+        } else if (this.surgeCount >= threshold && this.state === TILE_STATES.NORMAL) {
+            // Normal tiles destabilize when reaching threshold
             this.setState(TILE_STATES.DESTABILIZED);
         }
     }

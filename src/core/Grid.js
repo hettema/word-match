@@ -230,6 +230,12 @@ class Grid {
         const gridX = Math.floor(relativeX / (this.tileSize + this.gridPadding));
         const gridY = Math.floor(relativeY / (this.tileSize + this.gridPadding));
         
+        // Debug logging for coordinate conversion issues
+        if (worldY > this.scene.scale.height * 0.7) { // Only log for bottom area
+            console.log(`DEBUG worldToGrid: world(${worldX.toFixed(1)}, ${worldY.toFixed(1)}) -> relative(${relativeX.toFixed(1)}, ${relativeY.toFixed(1)}) -> grid(${gridX}, ${gridY}) valid: ${this.isValidPosition(gridX, gridY)}`);
+            console.log(`DEBUG grid bounds: width=${this.width}, height=${this.height}, gridStart(${this.gridStartX.toFixed(1)}, ${this.gridStartY.toFixed(1)}), tileSize=${this.tileSize}, padding=${this.gridPadding}`);
+        }
+        
         if (this.isValidPosition(gridX, gridY)) {
             return { x: gridX, y: gridY };
         }
@@ -477,6 +483,115 @@ class Grid {
         });
         
         return stats;
+    }
+    
+    /**
+     * Handle special tile interactions during ripple effects
+     * @param {Tile} tile - The tile to check for special interactions
+     * @returns {Array} Additional tiles to affect
+     */
+    handleSpecialTileInteraction(tile) {
+        const affectedTiles = [];
+        
+        switch (tile.type) {
+            case TILE_TYPES.BOMB:
+                // Bomb tiles explode and affect all neighbors
+                const neighbors = this.getNeighbors(tile.gridX, tile.gridY);
+                affectedTiles.push(...neighbors);
+                console.log(`Bomb tile exploded, affecting ${neighbors.length} neighbors`);
+                break;
+                
+            case TILE_TYPES.ICE:
+            case TILE_TYPES.STONE:
+                // Ice and stone tiles take damage but don't spread
+                const destroyed = tile.takeDamage();
+                if (destroyed) {
+                    console.log(`${tile.type} tile destroyed after taking damage`);
+                }
+                break;
+                
+            case TILE_TYPES.HIDDEN:
+                // Hidden tiles may reveal when affected by surges
+                if (tile.surgeCount >= 3 && !tile.isRevealed) {
+                    tile.reveal();
+                    console.log('Hidden tile revealed by surge effects');
+                }
+                break;
+        }
+        
+        return affectedTiles;
+    }
+    
+    /**
+     * Get tiles that are currently destabilized
+     * @returns {Array} Array of destabilized tiles
+     */
+    getDestabilizedTiles() {
+        return this.getTilesByState(TILE_STATES.DESTABILIZED);
+    }
+    
+    /**
+     * Reset surge counts on all tiles (for new level or after major cascade)
+     */
+    resetSurgeCounts() {
+        this.getAllTiles().forEach(tile => {
+            tile.surgeCount = 0;
+            
+            // Stop any ongoing tweens
+            if (tile.sprite && this.scene.tweens) {
+                this.scene.tweens.killTweensOf(tile.sprite);
+            }
+            
+            // Reset state to normal
+            tile.setState(TILE_STATES.NORMAL);
+            
+            // Force visual update
+            tile.updateVisualState();
+        });
+    }
+    
+    /**
+     * Get cascade potential - how many tiles are close to destabilizing
+     * @returns {Object} Cascade analysis
+     */
+    getCascadePotential() {
+        const allTiles = this.getAllTiles();
+        const levelConfig = this.scene.registry.get('levelConfig');
+        const threshold = levelConfig?.ripple?.threshold || 3;
+        
+        const analysis = {
+            total: allTiles.length,
+            normal: 0,
+            surged: 0,
+            nearDestabilization: 0,
+            destabilized: 0,
+            averageSurgeCount: 0
+        };
+        
+        let totalSurges = 0;
+        
+        allTiles.forEach(tile => {
+            totalSurges += tile.surgeCount;
+            
+            switch (tile.state) {
+                case TILE_STATES.NORMAL:
+                    if (tile.surgeCount === 0) {
+                        analysis.normal++;
+                    } else if (tile.surgeCount >= threshold - 1) {
+                        analysis.nearDestabilization++;
+                    } else {
+                        analysis.surged++;
+                    }
+                    break;
+                case TILE_STATES.DESTABILIZED:
+                    analysis.destabilized++;
+                    break;
+            }
+        });
+        
+        analysis.averageSurgeCount = allTiles.length > 0 ? totalSurges / allTiles.length : 0;
+        
+        return analysis;
     }
     
     /**

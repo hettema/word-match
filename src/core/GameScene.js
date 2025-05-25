@@ -139,7 +139,52 @@ class GameScene extends Phaser.Scene {
         this.inputSystem = new InputSystem(this, this.grid);
         this.registry.set('inputSystem', this.inputSystem);
         
+        // CRITICAL FIX: Pointer capture and event handling
+        this.setupPointerCapture();
+        
         console.log('All systems initialized');
+    }
+    
+    /**
+     * Setup pointer capture to fix bottom row input issues
+     */
+    setupPointerCapture() {
+        const canvas = this.game.canvas;
+        
+        // Prevent default behaviors that interfere with dragging
+        canvas.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+        canvas.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+        canvas.addEventListener('mousedown', (e) => e.preventDefault());
+        canvas.addEventListener('selectstart', (e) => e.preventDefault());
+        canvas.addEventListener('dragstart', (e) => e.preventDefault());
+        
+        // Force pointer capture on drag for reliable event handling
+        this.input.on('pointerdown', (pointer) => {
+            if (pointer.event && pointer.event.pointerId !== undefined) {
+                canvas.setPointerCapture(pointer.event.pointerId);
+                console.log('DEBUG: Captured pointer', pointer.event.pointerId);
+            }
+        });
+        
+        this.input.on('pointerup', (pointer) => {
+            if (pointer.event && pointer.event.pointerId !== undefined) {
+                try {
+                    canvas.releasePointerCapture(pointer.event.pointerId);
+                    console.log('DEBUG: Released pointer', pointer.event.pointerId);
+                } catch (e) {
+                    // Ignore if already released
+                }
+            }
+        });
+        
+        // Debug pointer move events
+        let moveCount = 0;
+        this.input.on('pointermove', (pointer) => {
+            moveCount++;
+            if (moveCount % 10 === 0) { // Log every 10th move to avoid spam
+                console.log(`DEBUG: Phaser move #${moveCount} Y:${pointer.y.toFixed(1)}`);
+            }
+        });
     }
     
     /**
@@ -158,6 +203,13 @@ class GameScene extends Phaser.Scene {
         this.effectsQueue.events.on('effect-error', (effect, error) => {
             console.error('Effect error:', effect, error);
             this.setGameState('playing'); // Resume game even on error
+        });
+        
+        // Cascade completion event
+        this.effectsQueue.events.on('cascade-complete', () => {
+            console.log('Cascade sequence completed');
+            this.setGameState('playing');
+            this.updateDebugInfo();
         });
         
         // InputSystem events (emitted through scene.events)
@@ -281,18 +333,8 @@ class GameScene extends Phaser.Scene {
         console.log(`Word submitted: "${word}" (${isValid ? 'valid' : 'invalid'})`);
         
         if (isValid && tiles.length > 0) {
-            // Create explosion effect for valid word
-            this.effectsQueue.addEffect({
-                type: 'explosion',
-                targets: tiles,
-                params: {
-                    duration: 500,
-                    particleCount: 15
-                },
-                callback: () => {
-                    this.handlePostExplosion(tiles);
-                }
-            });
+            // Trigger ripple effects for valid word (includes explosion + cascades)
+            this.effectsQueue.triggerWordRipple(tiles);
             
             this.statusText.setText(`Great word: "${word.toUpperCase()}"!`);
             this.statusText.setColor('#27ae60');

@@ -177,6 +177,7 @@
   },
   "active": "dba328133ee3b571",
   "lastOpenFiles": [
+    "test-ripple-effects.html",
     "test-scoring-playable.html",
     "test-scoring-simple.html",
     "test-score-game.html",
@@ -187,7 +188,6 @@
     "debug-bottom-row.js",
     "test-effects.html",
     "src/core/GameScene.js",
-    "src/systems/EffectsQueue.js",
     "kanban.md"
   ]
 }
