@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Level Progression Test - Word Cascade</title>
+    <link rel="stylesheet" href="test-styles.css">
+    <style>
+        .test-controls {
+            background: #34495e;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 2px solid #2c3e50;
+        }
+        
+        .control-group {
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .control-group label {
+            color: #ecf0f1;
+            font-weight: bold;
+            min-width: 120px;
+        }
+        
+        .control-group button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 2px;
+        }
+        
+        .control-group button:hover {
+            background: #2980b9;
+        }
+        
+        .control-group button.danger {
+            background: #e74c3c;
+        }
+        
+        .control-group button.danger:hover {
+            background: #c0392b;
+        }
+        
+        .control-group button.success {
+            background: #27ae60;
+        }
+        
+        .control-group button.success:hover {
+            background: #229954;
+        }
+        
+        .stats-display {
+            background: #2c3e50;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #ecf0f1;
+            white-space: pre-line;
+        }
+        
+        .level-selector {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        
+        .level-selector button {
+            min-width: 60px;
+        }
+        
+        .level-selector button.unlocked {
+            background: #27ae60;
+        }
+        
+        .level-selector button.locked {
+            background: #7f8c8d;
+            cursor: not-allowed;
+        }
+        
+        .level-selector button.current {
+            background: #f39c12;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="test-header">
+            <h1>🎯 Level Progression Test</h1>
+            <p>Testing LEVELS-01: Level management, victory/defeat conditions, and progress persistence</p>
+            <div class="test-status" id="testStatus">
+                <span class="status-indicator">⚪</span>
+                <span class="status-text">Initializing...</span>
+            </div>
+        </header>
+
+        <div class="test-controls">
+            <div class="control-group">
+                <label>Level Selection:</label>
+                <div class="level-selector" id="levelSelector">
+                    <!-- Level buttons will be populated here -->
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label>Game Actions:</label>
+                <button onclick="simulateVictory()" class="success">Simulate Victory</button>
+                <button onclick="simulateDefeat()" class="danger">Simulate Defeat</button>
+                <button onclick="addScore(100)">Add 100 Points</button>
+                <button onclick="useMove()">Use Move</button>
+                <button onclick="resetLevel()">Reset Level</button>
+            </div>
+            
+            <div class="control-group">
+                <label>Progress Management:</label>
+                <button onclick="saveProgress()">Save Progress</button>
+                <button onclick="loadProgress()">Load Progress</button>
+                <button onclick="resetProgress()" class="danger">Reset All Progress</button>
+                <button onclick="exportProgress()">Export Progress</button>
+            </div>
+            
+            <div class="control-group">
+                <label>Testing:</label>
+                <button onclick="runAutomatedTests()" class="success">Run Automated Tests</button>
+                <button onclick="testPersistence()">Test Persistence</button>
+                <button onclick="testTransitions()">Test Transitions</button>
+            </div>
+        </div>
+
+        <div class="stats-display" id="gameStats">
+            Loading game state...
+        </div>
+
+        <div class="stats-display" id="progressStats">
+            Loading progress data...
+        </div>
+
+        <div id="gameContainer" style="width: 100%; height: 600px; border: 2px solid #34495e; border-radius: 8px; margin: 20px 0;"></div>
+
+        <div class="test-results" id="testResults">
+            <h3>Test Results</h3>
+            <div id="testOutput">No tests run yet.</div>
+        </div>
+    </div>
+
+    <!-- Load Phaser and game files -->
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
+    
+    <!-- Load game systems -->
+    <script src="../src/utils/LevelLoader.js"></script>
+    <script src="../src/systems/WordValidator.js"></script>
+    <script src="../src/systems/ScoreSystem.js"></script>
+    <script src="../src/systems/EffectsQueue.js"></script>
+    <script src="../src/systems/InputSystem.js"></script>
+    <script src="../src/core/Tile.js"></script>
+    <script src="../src/core/Grid.js"></script>
+    <script src="../src/core/GameState.js"></script>
+    <script src="../src/core/GameScene.js"></script>
+
+    <script>
+        // Global game instance
+        let game;
+        let gameScene;
+        let gameState;
+        
+        // Test state
+        let testResults = [];
+        
+        // Initialize the test
+        async function initTest() {
+            try {
+                updateStatus('🔄', 'Initializing test environment...', 'info');
+                
+                // Create Phaser game instance
+                const config = {
+                    type: Phaser.AUTO,
+                    width: 800,
+                    height: 600,
+                    parent: 'gameContainer',
+                    backgroundColor: '#2c3e50',
+                    scene: GameScene,
+                    physics: {
+                        default: 'arcade',
+                        arcade: { debug: false }
+                    }
+                };
+                
+                game = new Phaser.Game(config);
+                
+                // Wait for scene to be created
+                game.events.once('ready', () => {
+                    gameScene = game.scene.getScene('GameScene');
+                    
+                    // Wait a bit more for full initialization
+                    setTimeout(() => {
+                        gameState = gameScene.gameStateManager;
+                        setupEventListeners();
+                        updateLevelSelector();
+                        updateStats();
+                        updateStatus('✅', 'Test environment ready', 'success');
+                    }, 1000);
+                });
+                
+            } catch (error) {
+                console.error('Failed to initialize test:', error);
+                updateStatus('❌', `Initialization failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Setup event listeners for game state changes
+        function setupEventListeners() {
+            if (!gameScene) return;
+            
+            gameScene.events.on('levelVictory', (data) => {
+                console.log('Level Victory:', data);
+                updateStats();
+                updateLevelSelector();
+                addTestResult('Victory', `Level ${data.level} completed with score ${data.score}`, 'success');
+            });
+            
+            gameScene.events.on('levelDefeat', (data) => {
+                console.log('Level Defeat:', data);
+                updateStats();
+                addTestResult('Defeat', `Level ${data.level} failed with score ${data.score}/${data.targetScore}`, 'warning');
+            });
+            
+            gameScene.events.on('levelTransitionStart', (data) => {
+                console.log('Level Transition:', data);
+                addTestResult('Transition', `Moving from level ${data.fromLevel} to ${data.toLevel}`, 'info');
+            });
+            
+            gameScene.events.on('allLevelsCompleted', (data) => {
+                console.log('All Levels Completed:', data);
+                addTestResult('Completion', `All levels completed! Total score: ${data.totalScore}`, 'success');
+            });
+        }
+        
+        // Update level selector buttons
+        function updateLevelSelector() {
+            if (!gameState) return;
+            
+            const selector = document.getElementById('levelSelector');
+            selector.innerHTML = '';
+            
+            const maxLevel = gameState.getMaxAvailableLevel();
+            const currentLevel = gameState.currentLevel;
+            const maxUnlocked = gameState.maxUnlockedLevel;
+            
+            for (let i = 1; i <= maxLevel; i++) {
+                const button = document.createElement('button');
+                button.textContent = `Level ${i}`;
+                button.onclick = () => loadLevel(i);
+                
+                if (i === currentLevel) {
+                    button.classList.add('current');
+                } else if (i <= maxUnlocked) {
+                    button.classList.add('unlocked');
+                } else {
+                    button.classList.add('locked');
+                    button.disabled = true;
+                }
+                
+                selector.appendChild(button);
+            }
+        }
+        
+        // Update statistics display
+        function updateStats() {
+            if (!gameState) return;
+            
+            const gameStats = document.getElementById('gameStats');
+            const progressStats = document.getElementById('progressStats');
+            
+            // Current game state
+            const currentStats = `CURRENT GAME STATE:
+Level: ${gameState.currentLevel}
+Score: ${gameState.currentScore} / ${gameState.targetScore}
+Progress: ${gameState.getScoreProgress().toFixed(1)}%
+Moves: ${gameState.movesRemaining} / ${gameState.maxMoves}
+Status: ${gameState.gameStatus}
+Time: ${((Date.now() - gameState.levelStartTime) / 1000).toFixed(1)}s`;
+            
+            gameStats.textContent = currentStats;
+            
+            // Overall progress
+            const overallStats = gameState.getOverallStats();
+            const levelStats = gameState.getLevelStats();
+            
+            const progressText = `PROGRESS & STATISTICS:
+Max Unlocked Level: ${overallStats.maxUnlockedLevel}
+Levels Completed: ${overallStats.levelsCompleted}
+Total Score: ${overallStats.totalScore}
+Total Play Time: ${(overallStats.totalPlayTime / 1000).toFixed(1)}s
+Total Attempts: ${overallStats.totalAttempts}
+Total Victories: ${overallStats.totalVictories}
+Success Rate: ${overallStats.totalAttempts > 0 ? ((overallStats.totalVictories / overallStats.totalAttempts) * 100).toFixed(1) : 0}%
+
+CURRENT LEVEL STATS:
+Attempts: ${levelStats.attempts}
+Victories: ${levelStats.victories}
+Best Score: ${levelStats.bestScore}
+Best Time: ${levelStats.bestTime ? (levelStats.bestTime / 1000).toFixed(1) + 's' : 'N/A'}`;
+            
+            progressStats.textContent = progressText;
+        }
+        
+        // Game action functions
+        function loadLevel(levelId) {
+            if (!gameState || !gameState.isLevelUnlocked(levelId)) {
+                addTestResult('Error', `Level ${levelId} is locked`, 'error');
+                return;
+            }
+            
+            gameScene.scene.restart({ level: levelId });
+            addTestResult('Action', `Loading level ${levelId}`, 'info');
+        }
+        
+        function simulateVictory() {
+            if (!gameState) return;
+            
+            // Set score to target to trigger victory
+            gameState.currentScore = gameState.targetScore;
+            gameState.handleVictory();
+            updateStats();
+            addTestResult('Simulation', 'Victory condition triggered', 'success');
+        }
+        
+        function simulateDefeat() {
+            if (!gameState) return;
+            
+            // Use all moves without reaching target
+            gameState.movesRemaining = 0;
+            gameState.handleDefeat();
+            updateStats();
+            addTestResult('Simulation', 'Defeat condition triggered', 'warning');
+        }
+        
+        function addScore(points) {
+            if (!gameState) return;
+            
+            gameState.updateScore(points);
+            updateStats();
+            addTestResult('Action', `Added ${points} points`, 'info');
+        }
+        
+        function useMove() {
+            if (!gameState) return;
+            
+            gameState.useMove();
+            updateStats();
+            addTestResult('Action', `Used move (${gameState.movesRemaining} remaining)`, 'info');
+        }
+        
+        function resetLevel() {
+            if (!gameState) return;
+            
+            gameState.restartLevel();
+            addTestResult('Action', 'Level restarted', 'info');
+        }
+        
+        // Progress management functions
+        function saveProgress() {
+            if (!gameState) return;
+            
+            gameState.saveProgress();
+            updateStats();
+            addTestResult('Progress', 'Progress saved to localStorage', 'success');
+        }
+        
+        function loadProgress() {
+            if (!gameState) return;
+            
+            gameState.loadProgress();
+            updateStats();
+            updateLevelSelector();
+            addTestResult('Progress', 'Progress loaded from localStorage', 'info');
+        }
+        
+        function resetProgress() {
+            if (!gameState) return;
+            
+            if (confirm('Are you sure you want to reset all progress? This cannot be undone.')) {
+                gameState.resetProgress();
+                updateStats();
+                updateLevelSelector();
+                addTestResult('Progress', 'All progress reset', 'warning');
+            }
+        }
+        
+        function exportProgress() {
+            if (!gameState) return;
+            
+            const progressData = gameState.exportProgress();
+            
+            // Create download link
+            const blob = new Blob([progressData], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `word-cascade-progress-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            addTestResult('Progress', 'Progress exported to file', 'success');
+        }
+        
+        // Testing functions
+        async function runAutomatedTests() {
+            if (!gameState) return;
+            
+            addTestResult('Test Suite', 'Starting automated tests...', 'info');
+            
+            try {
+                // Test 1: Victory condition
+                const originalScore = gameState.currentScore;
+                gameState.updateScore(gameState.targetScore);
+                if (gameState.currentScore >= gameState.targetScore) {
+                    addTestResult('Test 1', 'Victory condition detection: PASS', 'success');
+                } else {
+                    addTestResult('Test 1', 'Victory condition detection: FAIL', 'error');
+                }
+                gameState.currentScore = originalScore;
+                
+                // Test 2: Move tracking
+                const originalMoves = gameState.movesRemaining;
+                gameState.useMove();
+                if (gameState.movesRemaining === originalMoves - 1) {
+                    addTestResult('Test 2', 'Move tracking: PASS', 'success');
+                } else {
+                    addTestResult('Test 2', 'Move tracking: FAIL', 'error');
+                }
+                
+                // Test 3: Progress calculation
+                const progress = gameState.getScoreProgress();
+                if (typeof progress === 'number' && progress >= 0 && progress <= 100) {
+                    addTestResult('Test 3', 'Progress calculation: PASS', 'success');
+                } else {
+                    addTestResult('Test 3', 'Progress calculation: FAIL', 'error');
+                }
+                
+                // Test 4: Level unlocking
+                const maxUnlocked = gameState.maxUnlockedLevel;
+                const isUnlocked = gameState.isLevelUnlocked(maxUnlocked);
+                if (isUnlocked) {
+                    addTestResult('Test 4', 'Level unlocking logic: PASS', 'success');
+                } else {
+                    addTestResult('Test 4', 'Level unlocking logic: FAIL', 'error');
+                }
+                
+                // Test 5: Statistics tracking
+                const stats = gameState.getOverallStats();
+                if (stats && typeof stats.totalScore === 'number') {
+                    addTestResult('Test 5', 'Statistics tracking: PASS', 'success');
+                } else {
+                    addTestResult('Test 5', 'Statistics tracking: FAIL', 'error');
+                }
+                
+                addTestResult('Test Suite', 'Automated tests completed', 'info');
+                
+            } catch (error) {
+                addTestResult('Test Suite', `Test error: ${error.message}`, 'error');
+            }
+            
+            updateStats();
+        }
+        
+        async function testPersistence() {
+            if (!gameState) return;
+            
+            addTestResult('Persistence Test', 'Testing localStorage persistence...', 'info');
+            
+            try {
+                // Save current state
+                const originalLevel = gameState.maxUnlockedLevel;
+                const originalScore = gameState.totalScore;
+                
+                // Modify state
+                gameState.maxUnlockedLevel = Math.min(5, originalLevel + 1);
+                gameState.totalScore = originalScore + 1000;
+                gameState.saveProgress();
+                
+                // Reset and reload
+                gameState.maxUnlockedLevel = 1;
+                gameState.totalScore = 0;
+                gameState.loadProgress();
+                
+                // Check if data persisted
+                if (gameState.maxUnlockedLevel > originalLevel && gameState.totalScore > originalScore) {
+                    addTestResult('Persistence Test', 'localStorage persistence: PASS', 'success');
+                } else {
+                    addTestResult('Persistence Test', 'localStorage persistence: FAIL', 'error');
+                }
+                
+            } catch (error) {
+                addTestResult('Persistence Test', `Persistence error: ${error.message}`, 'error');
+            }
+            
+            updateStats();
+            updateLevelSelector();
+        }
+        
+        async function testTransitions() {
+            if (!gameState) return;
+            
+            addTestResult('Transition Test', 'Testing level transitions...', 'info');
+            
+            try {
+                const currentLevel = gameState.currentLevel;
+                
+                // Test victory transition
+                gameState.currentScore = gameState.targetScore;
+                gameState.handleVictory();
+                
+                // Check if next level was unlocked
+                if (gameState.maxUnlockedLevel > currentLevel) {
+                    addTestResult('Transition Test', 'Victory transition: PASS', 'success');
+                } else {
+                    addTestResult('Transition Test', 'Victory transition: FAIL', 'error');
+                }
+                
+            } catch (error) {
+                addTestResult('Transition Test', `Transition error: ${error.message}`, 'error');
+            }
+            
+            updateStats();
+            updateLevelSelector();
+        }
+        
+        // Utility functions
+        function updateStatus(icon, message, type) {
+            const statusElement = document.getElementById('testStatus');
+            const indicator = statusElement.querySelector('.status-indicator');
+            const text = statusElement.querySelector('.status-text');
+            
+            indicator.textContent = icon;
+            text.textContent = message;
+            
+            statusElement.className = `test-status ${type}`;
+        }
+        
+        function addTestResult(category, message, type) {
+            const timestamp = new Date().toLocaleTimeString();
+            testResults.push({ timestamp, category, message, type });
+            
+            const output = document.getElementById('testOutput');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${type}`;
+            resultDiv.innerHTML = `
+                <span class="timestamp">[${timestamp}]</span>
+                <span class="category">${category}:</span>
+                <span class="message">${message}</span>
+            `;
+            
+            output.appendChild(resultDiv);
+            output.scrollTop = output.scrollHeight;
+            
+            console.log(`[${category}] ${message}`);
+        }
+        
+        // Auto-update stats every 2 seconds
+        setInterval(() => {
+            if (gameState) {
+                updateStats();
+            }
+        }, 2000);
+        
+        // Initialize when page loads
+        window.addEventListener('load', initTest);
+    </script>
+</body>
+</html>

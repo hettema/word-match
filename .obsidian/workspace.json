@@ -177,8 +177,11 @@
   },
   "active": "dba328133ee3b571",
   "lastOpenFiles": [
-    "tests/test-advanced-cascades.html",
     "word-match-simple-polish-demo.html",
+    "word-match-simple-polish-demo1.html",
+    "tests/test-level-progression.html",
+    "src/core/GameState.js",
+    "tests/test-advanced-cascades.html",
     "index.html",
     "word-match-style-guide.md",
     "kanban.md",
@@ -189,9 +192,6 @@
     "tests/index.html",
     "tests/test-styles.css",
     "tests/test-word-validator.html",
-    "tests/test-ui-hud.html",
-    "tests/test-special-tiles.html",
-    "tests/test-special-tiles-playable.html",
-    "tests/test-scoring-playable.html"
+    "tests/test-ui-hud.html"
   ]
 }

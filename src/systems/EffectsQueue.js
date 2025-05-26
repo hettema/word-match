@@ -93,6 +93,24 @@ class EffectsQueue {
         const scoreSystem = this.scene.registry.get('scoreSystem');
         if (scoreSystem) {
             scoreSystem.startCascadeSequence();
+            
+            // Score the word immediately before any tiles are destroyed
+            const points = scoreSystem.scoreCascadeWord(wordTiles);
+            
+            // Create score popup animation at the center of the word
+            const centerTile = wordTiles[Math.floor(wordTiles.length / 2)];
+            if (centerTile) {
+                scoreSystem.createScorePopup(
+                    points,
+                    centerTile.worldX,
+                    centerTile.worldY,
+                    {
+                        color: '#27ae60',
+                        fontSize: 28,
+                        isBonus: wordTiles.some(t => t.type === 'MULTIPLIER')
+                    }
+                );
+            }
         }
         
         // Track initial word tiles to prevent re-processing

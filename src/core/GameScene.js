@@ -1,6 +1,6 @@
 /**
  * GameScene.js - Main game scene coordinating all systems
- * Integrates Grid, EffectsQueue, and InputSystem for complete gameplay
+ * Integrates Grid, EffectsQueue, InputSystem, and GameState for complete gameplay
  */
 
 class GameScene extends Phaser.Scene {
@@ -13,6 +13,7 @@ class GameScene extends Phaser.Scene {
         this.inputSystem = null;
         this.wordValidator = null;
         this.scoreSystem = null;
+        this.gameStateManager = null;
         
         // Game state
         this.gameState = 'playing'; // 'playing', 'animating', 'paused'
@@ -55,6 +56,9 @@ class GameScene extends Phaser.Scene {
             
             // Initialize word validator first (needed by other systems)
             await this.initializeWordValidator();
+            
+            // Initialize GameState manager
+            this.initializeGameState();
             
             // Create game board background BEFORE tiles (for proper layering)
             this.createGameBoard();
@@ -128,6 +132,19 @@ class GameScene extends Phaser.Scene {
     }
     
     /**
+     * Initialize GameState manager
+     */
+    initializeGameState() {
+        this.gameStateManager = new GameState(this);
+        this.registry.set('gameStateManager', this.gameStateManager);
+        
+        const levelConfig = this.registry.get('levelConfig');
+        this.gameStateManager.initializeLevel(this.currentLevel, levelConfig);
+        
+        console.log('GameState manager initialized');
+    }
+    
+    /**
      * Initialize all game systems
      */
     initializeSystems() {
@@ -141,9 +158,9 @@ class GameScene extends Phaser.Scene {
         this.scoreSystem = new ScoreSystem(this);
         this.registry.set('scoreSystem', this.scoreSystem);
         
-        // Initialize move tracking
-        this.maxMoves = levelConfig.moves || 20;
-        this.movesRemaining = this.maxMoves;
+        // Initialize move tracking from GameState
+        this.maxMoves = this.gameStateManager.maxMoves;
+        this.movesRemaining = this.gameStateManager.movesRemaining;
         
         // Initialize Grid
         this.grid = new Grid(this, levelConfig);
@@ -241,12 +258,31 @@ class GameScene extends Phaser.Scene {
         
         // ScoreSystem events
         this.events.on('scoreUpdated', (scoreData) => {
+            this.gameStateManager.updateScore(scoreData.pointsAdded || 0, scoreData); // Update GameState
             this.updateHUD();
         });
         
         this.events.on('wordScored', (scoreData) => {
             console.log(`Word "${scoreData.word}" scored ${scoreData.totalScore} points`);
+            this.gameStateManager.updateScore(scoreData.totalScore, scoreData); // Update GameState
             this.updateHUD();
+        });
+        
+        // GameState events
+        this.events.on('levelVictory', (victoryData) => {
+            this.handleVictoryWithTransition(victoryData);
+        });
+        
+        this.events.on('levelDefeat', (defeatData) => {
+            this.handleDefeatWithRestart(defeatData);
+        });
+        
+        this.events.on('levelTransitionStart', (transitionData) => {
+            console.log(`Transitioning from level ${transitionData.fromLevel} to ${transitionData.toLevel}`);
+        });
+        
+        this.events.on('allLevelsCompleted', (completionData) => {
+            this.handleAllLevelsCompleted(completionData);
         });
         
         // Advanced scoring events
@@ -578,7 +614,7 @@ class GameScene extends Phaser.Scene {
         const { word, tiles } = wordData;
         
         // Don't process if game is paused or animating
-        if (this.gameState !== 'playing') {
+        if (this.gameState !== 'playing' || this.gameStateManager.gameStatus !== 'playing') {
             return;
         }
         
@@ -588,35 +624,18 @@ class GameScene extends Phaser.Scene {
         console.log(`Word submitted: "${word}" (${isValid ? 'valid' : 'invalid'})`);
         
         if (isValid && tiles.length > 0) {
-            // Use a move
-            this.movesRemaining--;
+            // Use a move through GameState
+            this.gameStateManager.useMove();
+            this.movesRemaining = this.gameStateManager.movesRemaining;
             
-            // Score the word using cascade scoring
-            const points = this.scoreSystem.scoreCascadeWord(tiles);
-            
-            // Create score popup animation at the center of the word
-            const centerTile = tiles[Math.floor(tiles.length / 2)];
-            if (centerTile) {
-                this.scoreSystem.createScorePopup(
-                    points,
-                    centerTile.worldX,
-                    centerTile.worldY,
-                    {
-                        color: '#27ae60',
-                        fontSize: 28,
-                        isBonus: tiles.some(t => t.type === TILE_TYPES.MULTIPLIER)
-                    }
-                );
-            }
-            
-            // Trigger ripple effects for valid word (includes explosion + cascades)
+            // Trigger ripple effects for valid word (includes explosion + cascades + scoring)
+            // The cascade system will handle scoring internally through startCascadeSequence()
             this.effectsQueue.triggerWordRipple(tiles);
             
-            this.statusText.setText(`Great word: "${word.toUpperCase()}" (+${points} points)!`);
+            this.statusText.setText(`Great word: "${word.toUpperCase()}"!`);
             this.statusText.setColor('#27ae60');
             
-            // Check for game over conditions
-            this.checkGameOver();
+            // GameState will handle victory/defeat conditions automatically
             
         } else {
             this.statusText.setText(tiles.length === 0 ? 'Select some tiles first!' : `"${word.toUpperCase()}" is not a valid word`);
@@ -628,26 +647,10 @@ class GameScene extends Phaser.Scene {
     }
     
     /**
-     * Check for game over conditions
+     * Handle victory condition with level progression
+     * @param {Object} victoryData - Victory data from GameState
      */
-    checkGameOver() {
-        const hasWon = this.scoreSystem.hasReachedTarget();
-        const hasLost = this.movesRemaining <= 0 && !hasWon;
-        
-        if (hasWon) {
-            this.handleVictory();
-        } else if (hasLost) {
-            this.handleDefeat();
-        }
-        
-        // Update HUD regardless
-        this.updateHUD();
-    }
-    
-    /**
-     * Handle victory condition
-     */
-    handleVictory() {
+    handleVictoryWithTransition(victoryData) {
         this.setGameState('animating'); // Prevent further input
         this.statusText.setText('🎉 LEVEL COMPLETE! 🎉');
         this.statusText.setColor('#27ae60');
@@ -669,7 +672,7 @@ class GameScene extends Phaser.Scene {
                 this.scale.width / 2,
                 this.scale.height / 2,
                 400,
-                300,
+                350,
                 window.COLORS?.success || 0x27ae60
             ).setStrokeStyle(3, window.COLORS?.textLight || 0xecf0f1).setDepth(1001);
             
@@ -677,9 +680,9 @@ class GameScene extends Phaser.Scene {
             this.victoryText = this.add.text(
                 this.scale.width / 2,
                 this.scale.height / 2,
-                `🎉 LEVEL ${this.currentLevel} COMPLETE! 🎉\n\nScore: ${this.scoreSystem.getCurrentScore()}\nMoves Used: ${this.maxMoves - this.movesRemaining}\n\nWell done!`,
+                '',
                 {
-                    fontSize: '24px',
+                    fontSize: '20px',
                     fontFamily: 'Rubik, Arial, sans-serif',
                     color: '#ffffff',
                     align: 'center',
@@ -689,15 +692,27 @@ class GameScene extends Phaser.Scene {
             ).setOrigin(0.5, 0.5).setDepth(1002);
         }
         
+        // Update victory text with level progression info
+        const nextLevelText = victoryData.nextLevelUnlocked ?
+            `\n\nNext level unlocked!\nTransitioning in 2 seconds...` :
+            `\n\nAll levels completed!\nCongratulations!`;
+            
+        this.victoryText.setText(
+            `🎉 LEVEL ${victoryData.level} COMPLETE! 🎉\n\nScore: ${victoryData.score}\nTarget: ${victoryData.targetScore}\nMoves Used: ${victoryData.movesUsed}\nTime: ${(victoryData.time / 1000).toFixed(1)}s${nextLevelText}`
+        );
+        
         this.victoryOverlay.setVisible(true);
         this.victoryPanel.setVisible(true);
         this.victoryText.setVisible(true);
+        
+        console.log('Victory handled with transition data:', victoryData);
     }
     
     /**
-     * Handle defeat condition
+     * Handle defeat condition with restart option
+     * @param {Object} defeatData - Defeat data from GameState
      */
-    handleDefeat() {
+    handleDefeatWithRestart(defeatData) {
         this.setGameState('animating'); // Prevent further input
         this.statusText.setText('💀 GAME OVER 💀');
         this.statusText.setColor('#e74c3c');
@@ -719,7 +734,7 @@ class GameScene extends Phaser.Scene {
                 this.scale.width / 2,
                 this.scale.height / 2,
                 400,
-                300,
+                350,
                 window.COLORS?.danger || 0xe74c3c
             ).setStrokeStyle(3, window.COLORS?.textLight || 0xecf0f1).setDepth(1001);
             
@@ -727,9 +742,9 @@ class GameScene extends Phaser.Scene {
             this.defeatText = this.add.text(
                 this.scale.width / 2,
                 this.scale.height / 2,
-                `💀 GAME OVER 💀\n\nScore: ${this.scoreSystem.getCurrentScore()}\nTarget: ${this.scoreSystem.getTargetScore()}\n\nTry Again!`,
+                '',
                 {
-                    fontSize: '24px',
+                    fontSize: '20px',
                     fontFamily: 'Rubik, Arial, sans-serif',
                     color: '#ffffff',
                     align: 'center',
@@ -739,9 +754,34 @@ class GameScene extends Phaser.Scene {
             ).setOrigin(0.5, 0.5).setDepth(1002);
         }
         
+        // Update defeat text with detailed stats
+        this.defeatText.setText(
+            `💀 GAME OVER 💀\n\nScore: ${defeatData.score}\nTarget: ${defeatData.targetScore}\nProgress: ${defeatData.scoreProgress.toFixed(1)}%\nTime: ${(defeatData.time / 1000).toFixed(1)}s\n\nClick to restart level`
+        );
+        
         this.defeatOverlay.setVisible(true);
         this.defeatPanel.setVisible(true);
         this.defeatText.setVisible(true);
+        
+        // Add click handler for restart
+        this.defeatOverlay.setInteractive().on('pointerdown', () => {
+            this.gameStateManager.restartLevel();
+        });
+        
+        console.log('Defeat handled with restart option:', defeatData);
+    }
+    
+    /**
+     * Handle all levels completed
+     * @param {Object} completionData - Completion data from GameState
+     */
+    handleAllLevelsCompleted(completionData) {
+        console.log('All levels completed!', completionData);
+        this.statusText.setText('🏆 ALL LEVELS COMPLETED! 🏆');
+        this.statusText.setColor('#f1c40f');
+        
+        // Could show a special completion screen here
+        // For now, just log the achievement
     }
     
     /**
@@ -915,11 +955,12 @@ class GameScene extends Phaser.Scene {
      * Update HUD elements
      */
     updateHUD() {
-        if (!this.scoreSystem) return;
+        if (!this.scoreSystem || !this.gameStateManager) return;
         
-        const currentScore = this.scoreSystem.getCurrentScore();
-        const targetScore = this.scoreSystem.getTargetScore();
-        const progress = this.scoreSystem.getProgress();
+        // Use GameState for authoritative data
+        const currentScore = this.gameStateManager.currentScore;
+        const targetScore = this.gameStateManager.targetScore;
+        const progress = this.gameStateManager.getScoreProgress();
         
         // Update score display
         this.scoreText.setText(currentScore.toString());
@@ -928,13 +969,14 @@ class GameScene extends Phaser.Scene {
         // Update progress bar using new method
         this.updateProgressBar(progress / 100); // Convert percentage to 0-1 range
         
-        // Update moves display
-        this.movesText.setText(this.movesRemaining.toString());
+        // Update moves display from GameState
+        this.movesText.setText(this.gameStateManager.movesRemaining.toString());
         
         // Change moves color based on remaining moves
-        if (this.movesRemaining <= 3) {
+        const movesRemaining = this.gameStateManager.movesRemaining;
+        if (movesRemaining <= 3) {
             this.movesText.setColor('#e74c3c'); // Red when low
-        } else if (this.movesRemaining <= 6) {
+        } else if (movesRemaining <= 6) {
             this.movesText.setColor('#f39c12'); // Orange when medium
         } else {
             this.movesText.setColor('#3498db'); // Blue when plenty
@@ -942,6 +984,9 @@ class GameScene extends Phaser.Scene {
         
         // Update level display
         this.levelText.setText(`LEVEL ${this.currentLevel}`);
+        
+        // Sync local variables with GameState
+        this.movesRemaining = this.gameStateManager.movesRemaining;
     }
     
     /**
@@ -984,6 +1029,10 @@ class GameScene extends Phaser.Scene {
         }
         if (this.scoreSystem) {
             this.scoreSystem.destroy();
+        }
+        if (this.gameStateManager) {
+            // GameState doesn't need explicit destroy, but save progress
+            this.gameStateManager.saveProgress();
         }
         
         console.log('GameScene destroyed');
