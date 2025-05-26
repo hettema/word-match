@@ -134,11 +134,11 @@ class Tile {
         
         // Draw rounded rectangle background
         this.sprite.fillStyle(color);
-        this.sprite.fillRoundedRect(-tileSize/2 + 1, -tileSize/2 + 1, tileSize - 2, tileSize - 2, radius);
+        this.sprite.fillRoundedRect(-tileSize/2, -tileSize/2, tileSize, tileSize, radius);
         
         // Draw rounded border
         this.sprite.lineStyle(strokeWidth, borderColor);
-        this.sprite.strokeRoundedRect(-tileSize/2 + 1, -tileSize/2 + 1, tileSize - 2, tileSize - 2, radius);
+        this.sprite.strokeRoundedRect(-tileSize/2, -tileSize/2, tileSize, tileSize, radius);
     }
     
     /**
@@ -168,11 +168,11 @@ class Tile {
         
         // Draw rounded rectangle background with specified color
         this.sprite.fillStyle(color);
-        this.sprite.fillRoundedRect(-tileSize/2 + 1, -tileSize/2 + 1, tileSize - 2, tileSize - 2, radius);
+        this.sprite.fillRoundedRect(-tileSize/2, -tileSize/2, tileSize, tileSize, radius);
         
         // Draw rounded border
         this.sprite.lineStyle(strokeWidth, borderColor);
-        this.sprite.strokeRoundedRect(-tileSize/2 + 1, -tileSize/2 + 1, tileSize - 2, tileSize - 2, radius);
+        this.sprite.strokeRoundedRect(-tileSize/2, -tileSize/2, tileSize, tileSize, radius);
     }
     
     /**

@@ -27,8 +27,10 @@
     <meta name="format-detection" content="telephone=no">
 </head>
 <body class="game-page">
-    <!-- Game Container -->
-    <div id="game-container">
+    <!-- Game Wrapper - matches demo structure -->
+    <div class="game-wrapper">
+        <!-- Game Container -->
+        <div id="game-container">
         <!-- HTML UI Layer (HUD at top) -->
         <div class="ui-layer">
             <!-- HUD Elements -->
@@ -50,9 +52,11 @@
             </div>
         </div>
         
-        <!-- Game Board Area (Phaser canvas will be inserted here) -->
-        <div id="game-board-area" class="game-board-area">
-            <!-- Phaser canvas goes here -->
+        <!-- Game Board Area with Grid Container (matches demo) -->
+        <div class="grid-container">
+            <div id="game-board-area" class="game-board-area">
+                <!-- Phaser canvas goes here -->
+            </div>
         </div>
         
         <!-- Current word display -->
@@ -78,7 +82,8 @@
                 <button id="retry-button" class="game-button">Retry</button>
             </div>
         </div>
-    </div>
+        </div> <!-- Close game-container -->
+    </div> <!-- Close game-wrapper -->
 
     <!-- Victory Overlay -->
     <div class="overlay victory-overlay" id="victoryOverlay">
@@ -396,12 +401,12 @@
             }
         };
         
-        // Game configuration - increased height to prevent tile cutoff
+        // Game configuration - matched to demo styling
         const gameConfig = {
             type: Phaser.AUTO,
             width: 450,
             height: 500,
-            backgroundColor: 'transparent', // Make canvas background transparent
+            backgroundColor: 0x34495e, // Match demo's dark blue background
             parent: 'game-board-area',
             scale: {
                 mode: Phaser.Scale.NONE, // Don't scale, use exact size

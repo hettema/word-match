@@ -425,13 +425,58 @@ class GameScene extends Phaser.Scene {
     }
     
     /**
-     * Create game board background with shadow effect
-     * DISABLED: Removing board background to eliminate black background
+     * Create game board background with a square, rounded corners just like the demo
      */
     createGameBoard() {
-        console.log('🎮 BOARD BACKGROUND: Skipped - using transparent background for cleaner appearance');
-        // Board background creation disabled to remove black background
-        // Tiles will render directly on the transparent canvas background
+        console.log('🎮 BOARD BACKGROUND: Creating perfect square board with rounded corners');
+        
+        // Get canvas size
+        const canvasWidth = this.scale.width;
+        const canvasHeight = this.scale.height;
+        
+        // Create a perfect square board that fits within the canvas
+        const margin = 20; // Margin around the board
+        
+        // Use the smaller dimension to ensure a perfect square
+        const size = Math.min(canvasWidth, canvasHeight) - (margin * 2);
+        const cornerRadius = 15; // Corner radius for rounded rectangle
+        
+        // Calculate position to center the square in the canvas
+        const startX = (canvasWidth - size) / 2;
+        const startY = (canvasHeight - size) / 2;
+        
+        // Store board dimensions for other systems to reference
+        this.boardDimensions = {
+            x: startX,
+            y: startY,
+            size: size,
+            margin: margin,
+            cornerRadius: cornerRadius
+        };
+        
+        // Register board dimensions in the registry for other systems
+        this.registry.set('boardDimensions', this.boardDimensions);
+        
+        // Clear any previous graphics
+        if (this.boardBg) {
+            this.boardBg.clear();
+        }
+        
+        // Create main background - dark blue rounded square like the demo
+        this.boardBg = this.add.graphics();
+        
+        // Add drop shadow first (under the board)
+        const shadowGraphics = this.add.graphics();
+        shadowGraphics.fillStyle(0x000000, 0.3); // Semi-transparent black
+        shadowGraphics.fillRoundedRect(startX + 5, startY + 5, size, size, cornerRadius);
+        shadowGraphics.setBlendMode(Phaser.BlendModes.MULTIPLY);
+        
+        // Create the rounded square board
+        this.boardBg.fillStyle(0x34495e, 1); // Match demo background color
+        this.boardBg.fillRoundedRect(startX, startY, size, size, cornerRadius);
+        
+        console.log('🎮 BOARD DIMENSIONS:', this.boardDimensions);
+        console.log('🎮 BOARD BACKGROUND: Created perfect square with rounded corners');
     }
     
     /**

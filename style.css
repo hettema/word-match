@@ -9,36 +9,46 @@
 
 body {
     font-family: 'Rubik', 'Arial', sans-serif;
-    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    background: #2c3e50; /* DIAGNOSTIC: Changed to solid color like demo */
     min-height: 100vh;
     margin: 0;
     padding: 0;
-    overflow-x: hidden;
+    overflow: hidden; /* DIAGNOSTIC: Changed from overflow-x to match demo */
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 /* Game-specific body styling (for game pages) */
 body.game-page {
+    /* DIAGNOSTIC: Remove duplicate flex properties since they're now in body */
+}
+
+/* Game wrapper - matches demo structure */
+.game-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
-    overflow: hidden;
 }
 
-/* Game container */
+/* Game container - matches demo sizing */
 #game-container {
     position: relative;
     width: 100vw;
     height: 100vh;
-    max-width: 800px;
+    max-width: 600px; /* DIAGNOSTIC: Changed from 800px to match demo */
     max-height: 800px;
-    background: transparent; /* Remove black background */
-    border-radius: 8px;
-    box-shadow: none; /* Remove shadow that creates visual boundaries */
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    padding: 5px; /* Reduce padding for more breathing room */
-    box-sizing: border-box;
+    transition: filter 0.3s ease, opacity 0.3s ease; /* DIAGNOSTIC: Added blur transition like demo */
+    /* DIAGNOSTIC: Removed flex properties to match demo structure */
+}
+
+#game-container.blurred {
+    filter: blur(4px);
+    opacity: 0.7;
 }
 
 /* Canvas styling - more specific to avoid affecting Phaser */
@@ -46,6 +56,17 @@ body.game-page {
     display: block;
     border-radius: 8px;
     /* Remove the !important overrides to let Phaser control size */
+}
+
+/* UI Layer - matches demo absolute positioning */
+.ui-layer {
+    position: absolute;
+    top: 20px; /* DIAGNOSTIC: Match demo positioning */
+    left: 20px;
+    right: 20px;
+    z-index: 100; /* DIAGNOSTIC: Match demo z-index */
+    display: flex;
+    justify-content: space-between;
 }
 
 /* HUD Overlay Styles (for HTML elements if needed) */
@@ -68,6 +89,70 @@ body.game-page {
     height: 100%;
     padding: 0 20px;
     color: white;
+}
+
+/* Score Panel - matches demo styling */
+.score-panel {
+    background: rgba(44, 62, 80, 0.9); /* DIAGNOSTIC: Match demo background */
+    padding: 15px 20px; /* DIAGNOSTIC: Match demo padding */
+    border-radius: 10px; /* DIAGNOSTIC: Match demo border radius */
+    border: 2px solid #34495e; /* DIAGNOSTIC: Match demo border */
+    min-width: 200px; /* DIAGNOSTIC: Match demo min-width */
+}
+
+.score-label {
+    color: #bdc3c7; /* DIAGNOSTIC: Match demo label color */
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.score-value {
+    color: white; /* DIAGNOSTIC: Changed from #f39c12 to white like demo */
+    font-size: 24px;
+    font-weight: 700; /* DIAGNOSTIC: Match demo font weight */
+}
+
+.target-info {
+    margin-top: 10px; /* DIAGNOSTIC: Match demo spacing */
+    padding-top: 10px;
+    border-top: 1px solid rgba(189, 195, 199, 0.2); /* DIAGNOSTIC: Match demo border */
+}
+
+.target-label {
+    color: #2ecc71; /* DIAGNOSTIC: Match demo green color */
+    font-size: 11px; /* DIAGNOSTIC: Match demo font size */
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 5px; /* DIAGNOSTIC: Match demo spacing */
+}
+
+/* Moves Panel - matches demo styling */
+.moves-panel {
+    background: rgba(44, 62, 80, 0.9); /* DIAGNOSTIC: Match demo background */
+    padding: 15px 20px; /* DIAGNOSTIC: Match demo padding */
+    border-radius: 10px; /* DIAGNOSTIC: Match demo border radius */
+    border: 2px solid #34495e; /* DIAGNOSTIC: Match demo border */
+    text-align: center; /* DIAGNOSTIC: Match demo alignment */
+/* The grid container styling is now handled directly in the Phaser code */
+.grid-container {
+    /* Removed absolute positioning to avoid conflicts */
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.game-board-area {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+}
+
+.moves-value {
+    color: white; /* DIAGNOSTIC: Changed from #3498db to white like demo */
+    font-size: 24px;
+    font-weight: 700; /* DIAGNOSTIC: Match demo font weight */
 }
 
 .hud-section {
@@ -96,16 +181,6 @@ body.game-page {
     color: #95a5a6;
 }
 
-/* Score specific styling */
-.score-value {
-    color: #f39c12;
-}
-
-/* Moves specific styling */
-.moves-value {
-    color: #3498db;
-}
-
 .moves-low {
     color: #e74c3c;
     animation: pulse 1s infinite;
@@ -115,7 +190,24 @@ body.game-page {
     color: #f39c12;
 }
 
-/* Progress bar styling */
+/* Progress bar styling - matches demo */
+.progress-bar {
+    width: 100%; /* DIAGNOSTIC: Match demo full width */
+    height: 6px; /* DIAGNOSTIC: Match demo height */
+    background: rgba(255, 255, 255, 0.1); /* DIAGNOSTIC: Match demo background */
+    border-radius: 3px; /* DIAGNOSTIC: Match demo border radius */
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    width: 0%; /* DIAGNOSTIC: Start at 0% like demo */
+    background: linear-gradient(90deg, #27ae60, #2ecc71); /* DIAGNOSTIC: Match demo gradient */
+    border-radius: 3px; /* DIAGNOSTIC: Match demo border radius */
+    transition: width 0.3s ease;
+    box-shadow: 0 0 10px rgba(46, 204, 113, 0.5); /* DIAGNOSTIC: Match demo glow */
+}
+
 .progress-container {
     width: 200px;
     height: 8px;
@@ -123,13 +215,6 @@ body.game-page {
     border-radius: 4px;
     overflow: hidden;
     margin: 5px 0;
-}
-
-.progress-bar {
-    height: 100%;
-    background: linear-gradient(90deg, #3498db 0%, #2ecc71 100%);
-    border-radius: 4px;
-    transition: width 0.3s ease;
 }
 
 .progress-complete {
@@ -779,7 +864,7 @@ body.game-page {
 }
 
 .moves-value {
-    color: #3498db;
+    color: white; /* Changed from #3498db to white like demo */
     font-size: 36px;
     font-weight: 700;
     margin: 5px 0;
@@ -1164,4 +1249,26 @@ body.game-page {
         font-size: 14px;
         padding: 4px 8px;
     }
+}
+/* Current word display - matches demo */
+.current-word {
+    position: absolute;
+    bottom: 100px; /* DIAGNOSTIC: Match demo positioning */
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(44, 62, 80, 0.9); /* DIAGNOSTIC: Match demo background */
+    padding: 10px 20px; /* DIAGNOSTIC: Match demo padding */
+    border-radius: 20px; /* DIAGNOSTIC: Match demo border radius */
+    border: 2px solid #00d9ff; /* DIAGNOSTIC: Match demo cyan border */
+    color: #00d9ff; /* DIAGNOSTIC: Match demo cyan text */
+    font-size: 20px; /* DIAGNOSTIC: Match demo font size */
+    font-weight: 700; /* DIAGNOSTIC: Match demo font weight */
+    letter-spacing: 2px; /* DIAGNOSTIC: Match demo letter spacing */
+    opacity: 0;
+    transition: opacity 0.2s; /* DIAGNOSTIC: Match demo transition */
+    z-index: 50; /* DIAGNOSTIC: Ensure it's above game elements */
+}
+
+.current-word.visible {
+    opacity: 1;
 }

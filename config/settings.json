@@ -9,7 +9,7 @@
     "height": 600,
     "backgroundColor": "#2c3e50",
     "tileSize": 64,
-    "gridPadding": 10,
+    "gridPadding": 6,
     "responsive": true,
     "minWidth": 375
   },

@@ -91,24 +91,57 @@ class Grid {
     }
     
     /**
-     * Calculate grid position to center it on screen
+     * Calculate grid position to center it within the square, rounded-corner board
      */
     calculateGridPosition() {
+        // Get the board dimensions created in GameScene
+        const boardDimensions = this.scene.registry.get('boardDimensions');
+        
+        if (!boardDimensions) {
+            console.error('Board dimensions not found in registry!');
+            // Fallback to simple centering
+            this.fallbackGridPositioning();
+            return;
+        }
+        
+        // Calculate total grid size including padding between tiles
+        const totalGridWidth = this.width * this.tileSize + (this.width - 1) * this.gridPadding;
+        const totalGridHeight = this.height * this.tileSize + (this.height - 1) * this.gridPadding;
+        
+        // Calculate inner padding to ensure equal spacing on all sides inside the board
+        const innerPaddingX = (boardDimensions.size - totalGridWidth) / 2;
+        const innerPaddingY = (boardDimensions.size - totalGridHeight) / 2;
+        
+        // Set grid starting position (top-left corner of grid)
+        this.gridStartX = boardDimensions.x + innerPaddingX;
+        this.gridStartY = boardDimensions.y + innerPaddingY;
+        
+        console.log('🔍 GRID POSITIONING - WITHIN SQUARE BOARD:');
+        console.log(`  🎨 Board: Square ${boardDimensions.size}x${boardDimensions.size} at (${boardDimensions.x}, ${boardDimensions.y})`);
+        console.log(`  📊 Grid: ${totalGridWidth}x${totalGridHeight}`);
+        console.log(`  🎯 Position: (${this.gridStartX.toFixed(1)}, ${this.gridStartY.toFixed(1)})`);
+        console.log(`  📐 Inner Padding: X=${innerPaddingX.toFixed(1)}, Y=${innerPaddingY.toFixed(1)}`);
+        console.log(`  ✅ Grid centered within square board with equal padding`);
+    }
+    
+    /**
+     * Fallback grid positioning if board dimensions aren't available
+     */
+    fallbackGridPositioning() {
         const gameWidth = this.scene.scale.width;
         const gameHeight = this.scene.scale.height;
         
         const totalGridWidth = this.width * this.tileSize + (this.width - 1) * this.gridPadding;
         const totalGridHeight = this.height * this.tileSize + (this.height - 1) * this.gridPadding;
         
-        // Simple centered positioning - no board background alignment needed
+        // Simple centered positioning
         this.gridStartX = (gameWidth - totalGridWidth) / 2;
         this.gridStartY = (gameHeight - totalGridHeight) / 2;
         
-        console.log('🔍 GRID POSITIONING - CENTERED:');
+        console.log('⚠️ FALLBACK GRID POSITIONING - CENTERED:');
         console.log(`  🖼️ Canvas: ${gameWidth}x${gameHeight}`);
         console.log(`  📊 Grid: ${totalGridWidth}x${totalGridHeight}`);
         console.log(`  🎯 Position: (${this.gridStartX.toFixed(1)}, ${this.gridStartY.toFixed(1)})`);
-        console.log(`  ✅ Grid perfectly centered on transparent canvas`);
     }
     
     /**
