@@ -15,9 +15,16 @@ A challenging browser-based puzzle game that combines Scrabble-style word buildi
 ### Special Tiles
 - **💣 Bomb Tiles**: Explode all adjacent tiles when triggered
 - **🧊 Ice Tiles**: Require 2 hits to destroy, cannot be selected
-- **🗿 Stone Tiles**: Require 4 hits to destroy, cannot be selected  
+- **🗿 Stone Tiles**: Require 4 hits to destroy, cannot be selected
 - **✨ Multiplier Tiles**: Double your entire move score when included
 - **🔮 Hidden Tiles**: Letter revealed after 3 surge hits
+
+### Difficulty Progression
+- **Levels 1-6**: Learn mechanics with all special tiles introduced gradually
+- **Level 7**: Strategic precision required - larger grid, fewer moves
+- **Level 8**: Efficiency expert - high score target with limited moves
+- **Level 9**: Master's trial - 8x8 grid with only 14 moves for 3200 points
+- **Level 10**: Grandmaster's gauntlet - Ultimate challenge requiring perfect play
 
 ### Scoring System
 - **Base Score**: Scrabble letter values (A=1, Z=10, etc.)

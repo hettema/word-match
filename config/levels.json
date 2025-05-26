@@ -2,10 +2,10 @@
   "levels": [
     {
       "id": 1,
-      "name": "First Words",
+      "name": "First Steps",
       "gridSize": { "width": 6, "height": 6 },
-      "targetScore": 300,
-      "moves": 12,
+      "targetScore": 350,
+      "moves": 15,
       "tileDistribution": "scrabble_uk",
       "ripple": {
         "spread": 0.2,
@@ -13,8 +13,8 @@
         "threshold": 4
       },
       "specialTiles": {
-        "bomb": 0.0,
-        "multiplier": 0.0,
+        "bomb": 0.02,
+        "multiplier": 0.03,
         "ice": 0.0,
         "stone": 0.0,
         "hidden": 0.0
@@ -22,10 +22,10 @@
     },
     {
       "id": 2,
-      "name": "Lucky Multipliers",
+      "name": "Ice Introduction",
       "gridSize": { "width": 6, "height": 6 },
-      "targetScore": 450,
-      "moves": 14,
+      "targetScore": 500,
+      "moves": 16,
       "tileDistribution": "scrabble_uk",
       "ripple": {
         "spread": 0.25,
@@ -33,19 +33,39 @@
         "threshold": 4
       },
       "specialTiles": {
-        "bomb": 0.0,
+        "bomb": 0.02,
         "multiplier": 0.03,
-        "ice": 0.0,
+        "ice": 0.03,
         "stone": 0.0,
         "hidden": 0.0
       }
     },
     {
       "id": 3,
-      "name": "Chain Reactions",
+      "name": "Hidden Secrets",
       "gridSize": { "width": 6, "height": 6 },
-      "targetScore": 600,
-      "moves": 15,
+      "targetScore": 650,
+      "moves": 17,
+      "tileDistribution": "scrabble_uk",
+      "ripple": {
+        "spread": 0.3,
+        "power": 1,
+        "threshold": 3
+      },
+      "specialTiles": {
+        "bomb": 0.03,
+        "multiplier": 0.04,
+        "ice": 0.02,
+        "stone": 0.0,
+        "hidden": 0.04
+      }
+    },
+    {
+      "id": 4,
+      "name": "Stone Walls",
+      "gridSize": { "width": 6, "height": 6 },
+      "targetScore": 800,
+      "moves": 18,
       "tileDistribution": "scrabble_uk",
       "ripple": {
         "spread": 0.35,
@@ -53,39 +73,19 @@
         "threshold": 3
       },
       "specialTiles": {
-        "bomb": 0.0,
+        "bomb": 0.03,
         "multiplier": 0.04,
-        "ice": 0.0,
-        "stone": 0.0,
-        "hidden": 0.0
-      }
-    },
-    {
-      "id": 4,
-      "name": "Explosive Entry",
-      "gridSize": { "width": 6, "height": 6 },
-      "targetScore": 750,
-      "moves": 16,
-      "tileDistribution": "scrabble_uk",
-      "ripple": {
-        "spread": 0.4,
-        "power": 1,
-        "threshold": 3
-      },
-      "specialTiles": {
-        "bomb": 0.02,
-        "multiplier": 0.03,
-        "ice": 0.0,
-        "stone": 0.0,
-        "hidden": 0.0
+        "ice": 0.03,
+        "stone": 0.02,
+        "hidden": 0.03
       }
     },
     {
       "id": 5,
-      "name": "Ice Breaker",
+      "name": "Mixed Mayhem",
       "gridSize": { "width": 6, "height": 6 },
-      "targetScore": 900,
-      "moves": 18,
+      "targetScore": 1000,
+      "moves": 19,
       "tileDistribution": "scrabble_uk",
       "ripple": {
         "spread": 0.4,
@@ -93,18 +93,18 @@
         "threshold": 3
       },
       "specialTiles": {
-        "bomb": 0.02,
-        "multiplier": 0.03,
+        "bomb": 0.04,
+        "multiplier": 0.05,
         "ice": 0.04,
-        "stone": 0.0,
-        "hidden": 0.0
+        "stone": 0.03,
+        "hidden": 0.04
       }
     },
     {
       "id": 6,
-      "name": "Hidden Treasures",
+      "name": "Cascade Training",
       "gridSize": { "width": 6, "height": 6 },
-      "targetScore": 1100,
+      "targetScore": 1200,
       "moves": 20,
       "tileDistribution": "scrabble_uk",
       "ripple": {
@@ -113,91 +113,91 @@
         "threshold": 3
       },
       "specialTiles": {
-        "bomb": 0.03,
-        "multiplier": 0.04,
-        "ice": 0.03,
-        "stone": 0.0,
+        "bomb": 0.05,
+        "multiplier": 0.05,
+        "ice": 0.04,
+        "stone": 0.03,
         "hidden": 0.05
       }
     },
     {
       "id": 7,
-      "name": "Stone Fortress",
-      "gridSize": { "width": 6, "height": 6 },
-      "targetScore": 1300,
-      "moves": 22,
+      "name": "Strategic Precision",
+      "gridSize": { "width": 7, "height": 7 },
+      "targetScore": 1800,
+      "moves": 18,
       "tileDistribution": "scrabble_uk",
       "ripple": {
-        "spread": 0.5,
+        "spread": 0.4,
         "power": 1,
         "threshold": 3
       },
       "specialTiles": {
-        "bomb": 0.04,
+        "bomb": 0.06,
         "multiplier": 0.04,
-        "ice": 0.03,
-        "stone": 0.03,
-        "hidden": 0.04
+        "ice": 0.08,
+        "stone": 0.06,
+        "hidden": 0.06
       }
     },
     {
       "id": 8,
-      "name": "Power Surge",
-      "gridSize": { "width": 6, "height": 6 },
-      "targetScore": 1500,
-      "moves": 24,
+      "name": "Efficiency Expert",
+      "gridSize": { "width": 7, "height": 7 },
+      "targetScore": 2400,
+      "moves": 16,
       "tileDistribution": "scrabble_uk",
       "ripple": {
-        "spread": 0.55,
+        "spread": 0.35,
         "power": 2,
         "threshold": 2
       },
       "specialTiles": {
         "bomb": 0.05,
-        "multiplier": 0.06,
-        "ice": 0.04,
-        "stone": 0.03,
-        "hidden": 0.04
+        "multiplier": 0.03,
+        "ice": 0.10,
+        "stone": 0.08,
+        "hidden": 0.07
       }
     },
     {
       "id": 9,
-      "name": "Cascade Master",
-      "gridSize": { "width": 6, "height": 6 },
-      "targetScore": 1800,
-      "moves": 25,
+      "name": "Master's Trial",
+      "gridSize": { "width": 8, "height": 8 },
+      "targetScore": 3200,
+      "moves": 14,
       "tileDistribution": "scrabble_uk",
       "ripple": {
-        "spread": 0.6,
+        "spread": 0.3,
         "power": 2,
         "threshold": 2
       },
       "specialTiles": {
-        "bomb": 0.06,
-        "multiplier": 0.07,
-        "ice": 0.05,
-        "stone": 0.04,
-        "hidden": 0.05
+        "bomb": 0.04,
+        "multiplier": 0.02,
+        "ice": 0.12,
+        "stone": 0.10,
+        "hidden": 0.08
       }
     },
     {
       "id": 10,
-      "name": "Ultimate Challenge",
-      "gridSize": { "width": 6, "height": 6 },
-      "targetScore": 2200,
-      "moves": 28,
+      "name": "Grandmaster's Gauntlet",
+      "gridSize": { "width": 8, "height": 8 },
+      "targetScore": 4500,
+      "moves": 12,
       "tileDistribution": "scrabble_uk",
       "ripple": {
-        "spread": 0.7,
-        "power": 2,
-        "threshold": 2
+        "spread": 0.25,
+        "power": 3,
+        "threshold": 1
       },
       "specialTiles": {
-        "bomb": 0.08,
-        "multiplier": 0.08,
-        "ice": 0.06,
-        "stone": 0.05,
-        "hidden": 0.06
+        "bomb": 0.03,
+        "multiplier": 0.015,
+        "ice": 0.15,
+        "stone": 0.12,
+        "hidden": 0.10
       }
     }
   ],
