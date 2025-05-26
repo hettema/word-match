@@ -25,7 +25,7 @@ class GameState {
         
         // Level transition settings
         this.transitionDelay = 2000; // 2 seconds before auto-transition
-        this.autoTransition = true;
+        this.autoTransition = false; // Changed to manual button-triggered transition
         
         // Load saved progress
         this.loadProgress();
@@ -120,8 +120,14 @@ class GameState {
      * Handle victory condition
      */
     handleVictory() {
-        if (this.gameStatus !== 'playing') return;
+        console.log(`🎯 handleVictory called - gameStatus: ${this.gameStatus}, score: ${this.currentScore}/${this.targetScore}`);
         
+        if (this.gameStatus !== 'playing') {
+            console.log(`🎯 Victory blocked - game status is '${this.gameStatus}', not 'playing'`);
+            return;
+        }
+        
+        console.log('🎯 Victory proceeding!');
         this.gameStatus = 'victory';
         const levelTime = Date.now() - this.levelStartTime;
         
@@ -331,36 +337,40 @@ class GameState {
      * Update game state UI elements
      */
     updateGameStateUI() {
-        // Update HUD elements if they exist
-        if (this.scene.scoreText) {
-            this.scene.scoreText.setText(this.currentScore.toString());
-        }
-        
-        if (this.scene.targetText) {
-            this.scene.targetText.setText(`Target: ${this.targetScore}`);
-        }
-        
-        if (this.scene.movesText) {
-            this.scene.movesText.setText(this.movesRemaining.toString());
-            
-            // Color-code moves based on remaining count
-            const movesRatio = this.movesRemaining / this.maxMoves;
-            if (movesRatio > 0.5) {
-                this.scene.movesText.setColor('#3498db'); // Blue - plenty of moves
-            } else if (movesRatio > 0.25) {
-                this.scene.movesText.setColor('#f39c12'); // Orange - getting low
-            } else {
-                this.scene.movesText.setColor('#e74c3c'); // Red - critical
+        try {
+            // Update HUD elements if they exist
+            if (this.scene && this.scene.scoreText) {
+                this.scene.scoreText.setText(this.currentScore.toString());
             }
-        }
-        
-        if (this.scene.levelText) {
-            this.scene.levelText.setText(`LEVEL ${this.currentLevel}`);
-        }
-        
-        // Update progress bar
-        if (this.scene.updateProgressBar) {
-            this.scene.updateProgressBar(this.getScoreProgress() / 100);
+            
+            if (this.scene && this.scene.targetText) {
+                this.scene.targetText.setText(`Target: ${this.targetScore}`);
+            }
+            
+            if (this.scene && this.scene.movesText) {
+                this.scene.movesText.setText(this.movesRemaining.toString());
+                
+                // Color-code moves based on remaining count
+                const movesRatio = this.movesRemaining / this.maxMoves;
+                if (movesRatio > 0.5) {
+                    this.scene.movesText.setColor('#3498db'); // Blue - plenty of moves
+                } else if (movesRatio > 0.25) {
+                    this.scene.movesText.setColor('#f39c12'); // Orange - getting low
+                } else {
+                    this.scene.movesText.setColor('#e74c3c'); // Red - critical
+                }
+            }
+            
+            if (this.scene && this.scene.levelText) {
+                this.scene.levelText.setText(`LEVEL ${this.currentLevel}`);
+            }
+            
+            // Update progress bar
+            if (this.scene && this.scene.updateProgressBar) {
+                this.scene.updateProgressBar(this.getScoreProgress() / 100);
+            }
+        } catch (error) {
+            console.error('Error updating game state UI:', error);
         }
     }
     

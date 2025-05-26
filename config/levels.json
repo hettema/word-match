@@ -2,29 +2,89 @@
   "levels": [
     {
       "id": 1,
-      "name": "Tutorial",
+      "name": "First Words",
       "gridSize": { "width": 6, "height": 6 },
-      "targetScore": 500,
+      "targetScore": 300,
+      "moves": 12,
+      "tileDistribution": "scrabble_uk",
+      "ripple": {
+        "spread": 0.2,
+        "power": 1,
+        "threshold": 4
+      },
+      "specialTiles": {
+        "bomb": 0.0,
+        "multiplier": 0.0,
+        "ice": 0.0,
+        "stone": 0.0,
+        "hidden": 0.0
+      }
+    },
+    {
+      "id": 2,
+      "name": "Lucky Multipliers",
+      "gridSize": { "width": 6, "height": 6 },
+      "targetScore": 450,
+      "moves": 14,
+      "tileDistribution": "scrabble_uk",
+      "ripple": {
+        "spread": 0.25,
+        "power": 1,
+        "threshold": 4
+      },
+      "specialTiles": {
+        "bomb": 0.0,
+        "multiplier": 0.03,
+        "ice": 0.0,
+        "stone": 0.0,
+        "hidden": 0.0
+      }
+    },
+    {
+      "id": 3,
+      "name": "Chain Reactions",
+      "gridSize": { "width": 6, "height": 6 },
+      "targetScore": 600,
       "moves": 15,
       "tileDistribution": "scrabble_uk",
       "ripple": {
-        "spread": 0.3,
+        "spread": 0.35,
+        "power": 1,
+        "threshold": 3
+      },
+      "specialTiles": {
+        "bomb": 0.0,
+        "multiplier": 0.04,
+        "ice": 0.0,
+        "stone": 0.0,
+        "hidden": 0.0
+      }
+    },
+    {
+      "id": 4,
+      "name": "Explosive Entry",
+      "gridSize": { "width": 6, "height": 6 },
+      "targetScore": 750,
+      "moves": 16,
+      "tileDistribution": "scrabble_uk",
+      "ripple": {
+        "spread": 0.4,
         "power": 1,
         "threshold": 3
       },
       "specialTiles": {
         "bomb": 0.02,
-        "multiplier": 0.01,
-        "ice": 0.02,
-        "stone": 0.01,
-        "hidden": 0.02
+        "multiplier": 0.03,
+        "ice": 0.0,
+        "stone": 0.0,
+        "hidden": 0.0
       }
     },
     {
-      "id": 2,
-      "name": "Getting Started",
-      "gridSize": { "width": 7, "height": 7 },
-      "targetScore": 800,
+      "id": 5,
+      "name": "Ice Breaker",
+      "gridSize": { "width": 6, "height": 6 },
+      "targetScore": 900,
       "moves": 18,
       "tileDistribution": "scrabble_uk",
       "ripple": {
@@ -33,19 +93,39 @@
         "threshold": 3
       },
       "specialTiles": {
-        "bomb": 0.03,
-        "multiplier": 0.02,
-        "ice": 0.03,
-        "stone": 0.01,
-        "hidden": 0.03
+        "bomb": 0.02,
+        "multiplier": 0.03,
+        "ice": 0.04,
+        "stone": 0.0,
+        "hidden": 0.0
       }
     },
     {
-      "id": 3,
-      "name": "Chain Reactions",
-      "gridSize": { "width": 8, "height": 8 },
-      "targetScore": 1200,
+      "id": 6,
+      "name": "Hidden Treasures",
+      "gridSize": { "width": 6, "height": 6 },
+      "targetScore": 1100,
       "moves": 20,
+      "tileDistribution": "scrabble_uk",
+      "ripple": {
+        "spread": 0.45,
+        "power": 1,
+        "threshold": 3
+      },
+      "specialTiles": {
+        "bomb": 0.03,
+        "multiplier": 0.04,
+        "ice": 0.03,
+        "stone": 0.0,
+        "hidden": 0.05
+      }
+    },
+    {
+      "id": 7,
+      "name": "Stone Fortress",
+      "gridSize": { "width": 6, "height": 6 },
+      "targetScore": 1300,
+      "moves": 22,
       "tileDistribution": "scrabble_uk",
       "ripple": {
         "spread": 0.5,
@@ -53,19 +133,39 @@
         "threshold": 3
       },
       "specialTiles": {
-        "bomb": 0.05,
-        "multiplier": 0.03,
-        "ice": 0.04,
-        "stone": 0.02,
-        "hidden": 0.03
+        "bomb": 0.04,
+        "multiplier": 0.04,
+        "ice": 0.03,
+        "stone": 0.03,
+        "hidden": 0.04
       }
     },
     {
-      "id": 4,
-      "name": "Advanced Cascades",
-      "gridSize": { "width": 8, "height": 8 },
+      "id": 8,
+      "name": "Power Surge",
+      "gridSize": { "width": 6, "height": 6 },
+      "targetScore": 1500,
+      "moves": 24,
+      "tileDistribution": "scrabble_uk",
+      "ripple": {
+        "spread": 0.55,
+        "power": 2,
+        "threshold": 2
+      },
+      "specialTiles": {
+        "bomb": 0.05,
+        "multiplier": 0.06,
+        "ice": 0.04,
+        "stone": 0.03,
+        "hidden": 0.04
+      }
+    },
+    {
+      "id": 9,
+      "name": "Cascade Master",
+      "gridSize": { "width": 6, "height": 6 },
       "targetScore": 1800,
-      "moves": 22,
+      "moves": 25,
       "tileDistribution": "scrabble_uk",
       "ripple": {
         "spread": 0.6,
@@ -74,18 +174,18 @@
       },
       "specialTiles": {
         "bomb": 0.06,
-        "multiplier": 0.04,
+        "multiplier": 0.07,
         "ice": 0.05,
-        "stone": 0.03,
-        "hidden": 0.04
+        "stone": 0.04,
+        "hidden": 0.05
       }
     },
     {
-      "id": 5,
-      "name": "Master Challenge",
-      "gridSize": { "width": 9, "height": 9 },
-      "targetScore": 2500,
-      "moves": 25,
+      "id": 10,
+      "name": "Ultimate Challenge",
+      "gridSize": { "width": 6, "height": 6 },
+      "targetScore": 2200,
+      "moves": 28,
       "tileDistribution": "scrabble_uk",
       "ripple": {
         "spread": 0.7,
@@ -94,10 +194,10 @@
       },
       "specialTiles": {
         "bomb": 0.08,
-        "multiplier": 0.05,
+        "multiplier": 0.08,
         "ice": 0.06,
-        "stone": 0.04,
-        "hidden": 0.05
+        "stone": 0.05,
+        "hidden": 0.06
       }
     }
   ],

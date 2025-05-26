@@ -257,14 +257,38 @@ class GameScene extends Phaser.Scene {
         });
         
         // ScoreSystem events
+        // Clean up any existing listeners first
+        this.events.off('scoreUpdated');
+        this.events.off('wordScored');
+        this.events.off('levelVictory');
+        this.events.off('levelDefeat');
+        this.events.off('levelTransitionStart');
+        this.events.off('allLevelsCompleted');
+        this.events.off('cascadeStarted');
+        this.events.off('chainReaction');
+        this.events.off('cascadeCompleted');
+        
         this.events.on('scoreUpdated', (scoreData) => {
-            this.gameStateManager.updateScore(scoreData.pointsAdded || 0, scoreData); // Update GameState
+            console.log('🎯 scoreUpdated event:', scoreData);
+            
+            // Sync GameState with ScoreSystem's total score
+            this.gameStateManager.currentScore = scoreData.currentScore;
+            
+            console.log(`🎯 Victory check: ${this.gameStateManager.currentScore} >= ${this.gameStateManager.targetScore} = ${this.gameStateManager.currentScore >= this.gameStateManager.targetScore}`);
+            console.log(`🎯 Game status: ${this.gameStateManager.gameStatus}`);
+            
+            // Check victory condition manually since we're setting score directly
+            if (this.gameStateManager.currentScore >= this.gameStateManager.targetScore) {
+                console.log('🎯 Calling handleVictory()');
+                this.gameStateManager.handleVictory();
+            }
+            
             this.updateHUD();
         });
-        
+
         this.events.on('wordScored', (scoreData) => {
             console.log(`Word "${scoreData.word}" scored ${scoreData.totalScore} points`);
-            this.gameStateManager.updateScore(scoreData.totalScore, scoreData); // Update GameState
+            // This event is handled by scoreUpdated, so we don't need to duplicate the logic
             this.updateHUD();
         });
         
@@ -690,20 +714,91 @@ class GameScene extends Phaser.Scene {
                     lineSpacing: 8
                 }
             ).setOrigin(0.5, 0.5).setDepth(1002);
+            
+            // Next Level button
+            this.nextLevelButton = this.add.rectangle(
+                this.scale.width / 2,
+                this.scale.height / 2 + 120,
+                200,
+                50,
+                window.COLORS?.primary || 0x3498db
+            ).setStrokeStyle(2, window.COLORS?.textLight || 0xecf0f1)
+             .setDepth(1003)
+             .setInteractive({ useHandCursor: true });
+            
+            this.nextLevelButtonText = this.add.text(
+                this.scale.width / 2,
+                this.scale.height / 2 + 120,
+                'NEXT LEVEL',
+                {
+                    fontSize: '18px',
+                    fontFamily: 'Rubik, Arial, sans-serif',
+                    color: '#ffffff',
+                    fontStyle: 'bold'
+                }
+            ).setOrigin(0.5, 0.5).setDepth(1004);
+            
+            // Button hover effects
+            this.nextLevelButton.on('pointerover', () => {
+                this.nextLevelButton.setFillStyle(window.COLORS?.primaryHover || 0x2980b9);
+            });
+            
+            this.nextLevelButton.on('pointerout', () => {
+                this.nextLevelButton.setFillStyle(window.COLORS?.primary || 0x3498db);
+            });
+            
+            // Button click handler
+            this.nextLevelButton.on('pointerdown', () => {
+                this.handleNextLevelClick();
+            });
         }
         
         // Update victory text with level progression info
         const nextLevelText = victoryData.nextLevelUnlocked ?
-            `\n\nNext level unlocked!\nTransitioning in 2 seconds...` :
+            `\n\nNext level unlocked!` :
             `\n\nAll levels completed!\nCongratulations!`;
             
-        this.victoryText.setText(
-            `🎉 LEVEL ${victoryData.level} COMPLETE! 🎉\n\nScore: ${victoryData.score}\nTarget: ${victoryData.targetScore}\nMoves Used: ${victoryData.movesUsed}\nTime: ${(victoryData.time / 1000).toFixed(1)}s${nextLevelText}`
-        );
+        if (this.victoryText && this.victoryText.active) {
+            try {
+                this.victoryText.setText(
+                    `🎉 LEVEL ${victoryData.level} COMPLETE! 🎉\n\nScore: ${victoryData.score}\nTarget: ${victoryData.targetScore}\nMoves Used: ${victoryData.movesUsed}\nTime: ${(victoryData.time / 1000).toFixed(1)}s${nextLevelText}`
+                );
+            } catch (error) {
+                console.error('Error setting victory text:', error);
+                // Recreate the victory text if it's corrupted
+                this.createVictoryUI();
+                if (this.victoryText) {
+                    this.victoryText.setText(
+                        `🎉 LEVEL ${victoryData.level} COMPLETE! 🎉\n\nScore: ${victoryData.score}\nTarget: ${victoryData.targetScore}\nMoves Used: ${victoryData.movesUsed}\nTime: ${(victoryData.time / 1000).toFixed(1)}s${nextLevelText}`
+                    );
+                }
+            }
+        } else {
+            // Create victory UI if it doesn't exist
+            this.createVictoryUI();
+            if (this.victoryText) {
+                this.victoryText.setText(
+                    `🎉 LEVEL ${victoryData.level} COMPLETE! 🎉\n\nScore: ${victoryData.score}\nTarget: ${victoryData.targetScore}\nMoves Used: ${victoryData.movesUsed}\nTime: ${(victoryData.time / 1000).toFixed(1)}s${nextLevelText}`
+                );
+            }
+        }
         
-        this.victoryOverlay.setVisible(true);
-        this.victoryPanel.setVisible(true);
-        this.victoryText.setVisible(true);
+        if (this.victoryOverlay) this.victoryOverlay.setVisible(true);
+        if (this.victoryPanel) this.victoryPanel.setVisible(true);
+        if (this.victoryText) this.victoryText.setVisible(true);
+        
+        // Show/hide next level button based on whether there are more levels
+        if (this.nextLevelButton && this.nextLevelButtonText) {
+            if (victoryData.nextLevelUnlocked) {
+                this.nextLevelButton.setVisible(true);
+                this.nextLevelButtonText.setVisible(true);
+                this.nextLevelButtonText.setText('NEXT LEVEL');
+            } else {
+                this.nextLevelButton.setVisible(true);
+                this.nextLevelButtonText.setVisible(true);
+                this.nextLevelButtonText.setText('PLAY AGAIN');
+            }
+        }
         
         console.log('Victory handled with transition data:', victoryData);
     }
@@ -844,6 +939,117 @@ class GameScene extends Phaser.Scene {
         } else {
             this.statusText.setText('Select tiles to form words!');
             this.statusText.setColor('#7f8c8d');
+        }
+    }
+
+    /**
+     * Create victory UI elements
+     */
+    createVictoryUI() {
+        // Only create if they don't already exist
+        if (!this.victoryOverlay || !this.victoryOverlay.active) {
+            // Dark background overlay
+            this.victoryOverlay = this.add.rectangle(
+                this.scale.width / 2,
+                this.scale.height / 2,
+                this.scale.width,
+                this.scale.height,
+                0x000000,
+                0.8
+            ).setDepth(1000).setVisible(false);
+        }
+        
+        if (!this.victoryPanel || !this.victoryPanel.active) {
+            // Victory panel (from style guide)
+            this.victoryPanel = this.add.rectangle(
+                this.scale.width / 2,
+                this.scale.height / 2,
+                400,
+                350,
+                window.COLORS?.success || 0x27ae60
+            ).setStrokeStyle(3, window.COLORS?.textLight || 0xecf0f1)
+             .setDepth(1001).setVisible(false);
+        }
+        
+        if (!this.victoryText || !this.victoryText.active) {
+            // Victory text with better styling
+            this.victoryText = this.add.text(
+                this.scale.width / 2,
+                this.scale.height / 2,
+                '',
+                {
+                    fontSize: '20px',
+                    fontFamily: 'Rubik, Arial, sans-serif',
+                    color: '#ffffff',
+                    align: 'center',
+                    fontStyle: 'bold',
+                    lineSpacing: 8
+                }
+            ).setOrigin(0.5, 0.5).setDepth(1002).setVisible(false);
+        }
+        
+        if (!this.nextLevelButton || !this.nextLevelButton.active) {
+            // Next Level button
+            this.nextLevelButton = this.add.rectangle(
+                this.scale.width / 2,
+                this.scale.height / 2 + 120,
+                200,
+                50,
+                window.COLORS?.primary || 0x3498db
+            ).setStrokeStyle(2, window.COLORS?.textLight || 0xecf0f1)
+             .setDepth(1003).setVisible(false)
+             .setInteractive({ useHandCursor: true });
+        }
+        
+        if (!this.nextLevelButtonText || !this.nextLevelButtonText.active) {
+            this.nextLevelButtonText = this.add.text(
+                this.scale.width / 2,
+                this.scale.height / 2 + 120,
+                'NEXT LEVEL',
+                {
+                    fontSize: '18px',
+                    fontFamily: 'Rubik, Arial, sans-serif',
+                    color: '#ffffff',
+                    fontStyle: 'bold'
+                }
+            ).setOrigin(0.5, 0.5).setDepth(1004).setVisible(false);
+        }
+        
+        // Set up button interactions
+        if (this.nextLevelButton && this.nextLevelButton.active) {
+            // Clear existing listeners to avoid duplicates
+            this.nextLevelButton.removeAllListeners();
+            
+            // Button hover effects
+            this.nextLevelButton.on('pointerover', () => {
+                this.nextLevelButton.setFillStyle(window.COLORS?.primaryHover || 0x2980b9);
+            });
+            
+            this.nextLevelButton.on('pointerout', () => {
+                this.nextLevelButton.setFillStyle(window.COLORS?.primary || 0x3498db);
+            });
+            
+            // Button click handler
+            this.nextLevelButton.on('pointerdown', () => {
+                this.handleNextLevelClick();
+            });
+        }
+    }
+
+    /**
+     * Handle next level button click
+     */
+    handleNextLevelClick() {
+        // Hide victory modal
+        if (this.victoryOverlay) this.victoryOverlay.setVisible(false);
+        if (this.victoryPanel) this.victoryPanel.setVisible(false);
+        if (this.victoryText) this.victoryText.setVisible(false);
+        if (this.nextLevelButton) this.nextLevelButton.setVisible(false);
+        if (this.nextLevelButtonText) this.nextLevelButtonText.setVisible(false);
+        
+        // Trigger level transition through GameState
+        if (this.gameStateManager) {
+            this.gameStateManager.transitionToNextLevel();
         }
     }
     
