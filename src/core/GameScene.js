@@ -50,6 +50,21 @@ class GameScene extends Phaser.Scene {
     async create() {
         console.log('Creating GameScene...');
         
+        // DIAGNOSTIC: Check canvas and container positioning
+        console.log('🔍 CANVAS & CONTAINER DIAGNOSTIC:');
+        const canvas = this.game.canvas;
+        const container = canvas.parentElement;
+        console.log(`  🖼️ Canvas Size: ${canvas.width}x${canvas.height}`);
+        console.log(`  📐 Canvas Style: ${canvas.style.width}x${canvas.style.height}`);
+        console.log(`  📦 Container ID: ${container?.id || 'unknown'}`);
+        if (container) {
+            const containerStyle = window.getComputedStyle(container);
+            console.log(`  📦 Container Padding: ${containerStyle.padding}`);
+            console.log(`  📦 Container Size: ${container.offsetWidth}x${container.offsetHeight}`);
+            console.log(`  📍 Canvas Position in Container: ${canvas.offsetLeft}, ${canvas.offsetTop}`);
+        }
+        console.log(`  🎮 Phaser Scale: ${this.scale.width}x${this.scale.height}`);
+        
         try {
             // Load configuration first
             await this.loadConfiguration();
@@ -69,8 +84,8 @@ class GameScene extends Phaser.Scene {
             // Set up event listeners
             this.setupEventListeners();
             
-            // Create UI elements
-            this.createUI();
+            // Create UI elements - commented out, using HTML UI layer instead
+            // this.createUI();
             
             // Start the game
             this.startGame();
@@ -240,7 +255,7 @@ class GameScene extends Phaser.Scene {
         this.effectsQueue.events.on('cascade-complete', () => {
             console.log('Cascade sequence completed');
             this.setGameState('playing');
-            this.updateDebugInfo();
+            // this.updateDebugInfo(); // Commented out - using HTML UI layer instead
         });
         
         // InputSystem events (emitted through scene.events)
@@ -312,8 +327,10 @@ class GameScene extends Phaser.Scene {
         // Advanced scoring events
         this.events.on('cascadeStarted', (cascadeData) => {
             console.log('Cascade sequence started');
-            this.statusText.setText('Cascade starting...');
-            this.statusText.setColor('#3498db');
+            if (this.statusText) {
+                this.statusText.setText('Cascade starting...');
+                this.statusText.setColor('#3498db');
+            }
         });
         
         this.events.on('chainReaction', (chainData) => {
@@ -351,11 +368,15 @@ class GameScene extends Phaser.Scene {
                     }
                 );
                 
-                this.statusText.setText(`Amazing cascade! +${cascadeData.finalBonus} bonus points!`);
-                this.statusText.setColor('#e74c3c');
+                if (this.statusText) {
+                    this.statusText.setText(`Amazing cascade! +${cascadeData.finalBonus} bonus points!`);
+                    this.statusText.setColor('#e74c3c');
+                }
             } else {
-                this.statusText.setText('Ready for next word!');
-                this.statusText.setColor('#2c3e50');
+                if (this.statusText) {
+                    this.statusText.setText('Ready for next word!');
+                    this.statusText.setColor('#2c3e50');
+                }
             }
         });
         
@@ -375,10 +396,11 @@ class GameScene extends Phaser.Scene {
         const settings = this.registry.get('settings');
         const uiConfig = settings.ui || {};
         
-        // Create HUD container (top area)
-        this.createHUD();
+        // Create HUD container (top area) - commented out, using HTML UI layer instead
+        // this.createHUD();
         
-        // Create debug info (bottom-left)
+        // Create debug info (bottom-left) - commented out, using HTML UI layer instead
+        /*
         this.debugText = this.add.text(10, this.scale.height - 120, '', {
             fontSize: '11px',
             fontFamily: 'Rubik, Arial, sans-serif',
@@ -386,14 +408,17 @@ class GameScene extends Phaser.Scene {
             backgroundColor: 'rgba(44, 62, 80, 0.8)',
             padding: { x: 8, y: 4 }
         });
+        */
         
-        // Create status text (bottom-center)
+        // Create status text (bottom-center) - commented out, using HTML UI layer instead
+        /*
         this.statusText = this.add.text(this.scale.width / 2, this.scale.height - 30, 'Ready to play!', {
             fontSize: '18px',
             fontFamily: 'Arial, sans-serif',
             color: '#27ae60',
             fontStyle: 'bold'
         }).setOrigin(0.5, 0.5);
+        */
         
         this.updateUI();
         console.log('UI created');
@@ -409,49 +434,69 @@ class GameScene extends Phaser.Scene {
         const tileSize = this.registry.get('settings')?.display?.tileSize || 64;
         const gridPadding = this.registry.get('settings')?.display?.gridPadding || 10;
         
-        // Calculate board dimensions based on grid size
+        // Calculate exact grid dimensions
         const totalGridWidth = gridWidth * tileSize + (gridWidth - 1) * gridPadding;
         const totalGridHeight = gridHeight * tileSize + (gridHeight - 1) * gridPadding;
-        const boardPadding = 20; // Extra padding around the grid
         
-        // Make board a perfect square based on the larger dimension
-        const maxDimension = Math.max(totalGridWidth, totalGridHeight);
-        const boardSize = maxDimension + boardPadding;
+        // Create board background that exactly fits the tiles with minimal padding
+        const boardPadding = 8; // Minimal padding around tiles
+        const boardWidth = totalGridWidth + (boardPadding * 2);
+        const boardHeight = totalGridHeight + (boardPadding * 2);
         
-        // Fixed position - center horizontally, positioned below HUD with proper spacing
+        // Position board to start at top to match tile positioning (gridStartY = 0)
         const boardX = this.scale.width / 2;
-        const hudHeight = 85; // Actual HUD height
-        const spacing = 20; // Space between HUD and board
-        const boardY = hudHeight + spacing + boardSize / 2; // Position board below HUD
+        const boardY = boardHeight / 2 + boardPadding; // Position board to start at top like tiles
         
-        // Create shadow (offset background)
+        // ENHANCED DEBUG LOGGING FOR POSITIONING BUG
+        console.log('🎮 BOARD BACKGROUND DEBUG - DETAILED ANALYSIS:');
+        console.log(`  📏 Grid Config: ${gridWidth}x${gridHeight} tiles`);
+        console.log(`  📐 Tile Size: ${tileSize}px, Padding: ${gridPadding}px`);
+        console.log(`  📊 Total Grid: ${totalGridWidth}x${totalGridHeight}px`);
+        console.log(`  📦 Board Padding: ${boardPadding}px`);
+        console.log(`  📦 Board Size: ${boardWidth}x${boardHeight}px`);
+        console.log(`  📍 Board Position: (${boardX}, ${boardY})`);
+        console.log(`  🖼️ Canvas Size: ${this.scale.width}x${this.scale.height}`);
+        console.log(`  📐 Board Top Edge: ${boardY - boardHeight/2} (should be ~${this.scale.height/2 - totalGridHeight/2})`);
+        console.log(`  📐 Board Bottom Edge: ${boardY + boardHeight/2}`);
+        console.log(`  🧮 Board Y Calculation: boardHeight/2(${boardHeight/2}) + boardPadding(${boardPadding}) = ${boardY}`);
+        
+        // Check if board is positioned correctly
+        const expectedCenterY = this.scale.height / 2;
+        const yOffset = boardY - expectedCenterY;
+        if (Math.abs(yOffset) > 10) {
+            console.warn(`🚨 BOARD POSITIONING BUG DETECTED: Board Y offset by ${yOffset.toFixed(1)}px from canvas center!`);
+            console.warn(`   Expected Y: ${expectedCenterY.toFixed(1)}, Actual Y: ${boardY.toFixed(1)}`);
+            console.warn(`   This calculation seems wrong: boardHeight/2 + boardPadding pushes board DOWN instead of centering it`);
+        }
+        
+        // Create subtle shadow
         this.boardShadow = this.add.graphics();
-        this.boardShadow.fillStyle(0x000000, 0.2);
+        this.boardShadow.fillStyle(0x000000, 0.15);
         this.boardShadow.fillRoundedRect(
-            boardX - boardSize/2 + 4,
-            boardY - boardSize/2 + 4,
-            boardSize,
-            boardSize,
-            12
+            boardX - boardWidth/2 + 2,
+            boardY - boardHeight/2 + 2,
+            boardWidth,
+            boardHeight,
+            8
         );
         
-        // Create main board background
+        // Create main board background - exactly sized to tiles
         this.boardBackground = this.add.graphics();
-        this.boardBackground.fillStyle(window.COLORS?.bgPanel || 0x34495e, 0.95);
-        this.boardBackground.lineStyle(3, window.COLORS?.border || 0x2c3e50);
+        this.boardBackground.fillStyle(window.COLORS?.bgPanel || 0x34495e, 0.9);
+        this.boardBackground.lineStyle(2, window.COLORS?.border || 0x2c3e50);
         this.boardBackground.fillRoundedRect(
-            boardX - boardSize/2,
-            boardY - boardSize/2,
-            boardSize,
-            boardSize,
-            12
+            boardX - boardWidth/2,
+            boardY - boardHeight/2,
+            boardWidth,
+            boardHeight,
+            8
         );
         this.boardBackground.strokeRoundedRect(
-            boardX - boardSize/2,
-            boardY - boardSize/2,
-            boardSize,
-            boardSize,
-            12
+            boardX - boardWidth/2,
+            boardY - boardHeight/2,
+            boardWidth,
+            boardHeight,
+            8
         );
     }
     
@@ -482,6 +527,8 @@ class GameScene extends Phaser.Scene {
         );
         
         // Score Section (left)
+        // Phaser HUD elements commented out - using HTML UI layer instead
+        /*
         this.scoreLabel = this.add.text(25, hudY + 12, 'SCORE', {
             fontSize: '12px',
             fontFamily: 'Rubik, Arial, sans-serif',
@@ -542,6 +589,7 @@ class GameScene extends Phaser.Scene {
             color: '#ecf0f1',
             fontStyle: 'bold'
         }).setOrigin(1, 0.5);
+        */
     }
     
     /**
@@ -622,7 +670,9 @@ class GameScene extends Phaser.Scene {
      */
     startGame() {
         this.setGameState('playing');
-        this.statusText.setText('Select tiles to form words!');
+        if (this.statusText) {
+            this.statusText.setText('Select tiles to form words!');
+        }
         
         // Start performance monitoring
         this.startPerformanceMonitoring();
@@ -656,14 +706,18 @@ class GameScene extends Phaser.Scene {
             // The cascade system will handle scoring internally through startCascadeSequence()
             this.effectsQueue.triggerWordRipple(tiles);
             
-            this.statusText.setText(`Great word: "${word.toUpperCase()}"!`);
-            this.statusText.setColor('#27ae60');
+            if (this.statusText) {
+                this.statusText.setText(`Great word: "${word.toUpperCase()}"!`);
+                this.statusText.setColor('#27ae60');
+            }
             
             // GameState will handle victory/defeat conditions automatically
             
         } else {
-            this.statusText.setText(tiles.length === 0 ? 'Select some tiles first!' : `"${word.toUpperCase()}" is not a valid word`);
-            this.statusText.setColor('#e74c3c');
+            if (this.statusText) {
+                this.statusText.setText(tiles.length === 0 ? 'Select some tiles first!' : `"${word.toUpperCase()}" is not a valid word`);
+                this.statusText.setColor('#e74c3c');
+            }
             
             // Clear invalid selection
             this.grid.clearSelection();
@@ -676,12 +730,30 @@ class GameScene extends Phaser.Scene {
      */
     handleVictoryWithTransition(victoryData) {
         this.setGameState('animating'); // Prevent further input
-        this.statusText.setText('🎉 LEVEL COMPLETE! 🎉');
-        this.statusText.setColor('#27ae60');
         
-        // Show victory overlay with proper Z-index
+        // Update status text if it exists
+        if (this.statusText) {
+            this.statusText.setText('🎉 LEVEL COMPLETE! 🎉');
+            this.statusText.setColor('#27ae60');
+        }
+        
+        // Use HTML overlay instead of Phaser overlay
+        if (window.UIManager) {
+            const victoryDisplayData = {
+                score: this.gameStateManager.currentScore,
+                target: this.gameStateManager.targetScore,
+                movesUsed: this.gameStateManager.maxMoves - this.gameStateManager.movesRemaining,
+                maxMoves: this.gameStateManager.maxMoves,
+                bestWord: this.scoreSystem.getBestWord() || 'NONE',
+                bestScore: this.scoreSystem.getBestWordScore() || 0
+            };
+            
+            window.UIManager.showVictory(victoryDisplayData);
+        }
+        
+        // Keep legacy Phaser overlay for backward compatibility (but don't show it)
         if (!this.victoryOverlay) {
-            // Dark background overlay
+            // Create but don't display - HTML overlay takes precedence
             this.victoryOverlay = this.add.rectangle(
                 this.scale.width / 2,
                 this.scale.height / 2,
@@ -689,18 +761,16 @@ class GameScene extends Phaser.Scene {
                 this.scale.height,
                 0x000000,
                 0.8
-            ).setDepth(1000);
+            ).setDepth(1000).setVisible(false);
             
-            // Victory panel (from style guide)
             this.victoryPanel = this.add.rectangle(
                 this.scale.width / 2,
                 this.scale.height / 2,
                 400,
                 350,
                 window.COLORS?.success || 0x27ae60
-            ).setStrokeStyle(3, window.COLORS?.textLight || 0xecf0f1).setDepth(1001);
+            ).setStrokeStyle(3, window.COLORS?.textLight || 0xecf0f1).setDepth(1001).setVisible(false);
             
-            // Victory text with better styling
             this.victoryText = this.add.text(
                 this.scale.width / 2,
                 this.scale.height / 2,
@@ -713,9 +783,9 @@ class GameScene extends Phaser.Scene {
                     fontStyle: 'bold',
                     lineSpacing: 8
                 }
-            ).setOrigin(0.5, 0.5).setDepth(1002);
+            ).setOrigin(0.5, 0.5).setDepth(1002).setVisible(false);
             
-            // Next Level button
+            // Next Level button (hidden - HTML overlay handles this)
             this.nextLevelButton = this.add.rectangle(
                 this.scale.width / 2,
                 this.scale.height / 2 + 120,
@@ -724,7 +794,8 @@ class GameScene extends Phaser.Scene {
                 window.COLORS?.primary || 0x3498db
             ).setStrokeStyle(2, window.COLORS?.textLight || 0xecf0f1)
              .setDepth(1003)
-             .setInteractive({ useHandCursor: true });
+             .setInteractive({ useHandCursor: true })
+             .setVisible(false);
             
             this.nextLevelButtonText = this.add.text(
                 this.scale.width / 2,
@@ -809,12 +880,26 @@ class GameScene extends Phaser.Scene {
      */
     handleDefeatWithRestart(defeatData) {
         this.setGameState('animating'); // Prevent further input
-        this.statusText.setText('💀 GAME OVER 💀');
-        this.statusText.setColor('#e74c3c');
         
-        // Show defeat overlay with proper Z-index
+        // Update status text if it exists
+        if (this.statusText) {
+            this.statusText.setText('💀 GAME OVER 💀');
+            this.statusText.setColor('#e74c3c');
+        }
+        
+        // Use HTML overlay instead of Phaser overlay
+        if (window.UIManager) {
+            const defeatDisplayData = {
+                score: this.gameStateManager.currentScore,
+                target: this.gameStateManager.targetScore
+            };
+            
+            window.UIManager.showDefeat(defeatDisplayData);
+        }
+        
+        // Keep legacy Phaser overlay for backward compatibility (but don't show it)
         if (!this.defeatOverlay) {
-            // Dark background overlay
+            // Create but don't display - HTML overlay takes precedence
             this.defeatOverlay = this.add.rectangle(
                 this.scale.width / 2,
                 this.scale.height / 2,
@@ -822,18 +907,16 @@ class GameScene extends Phaser.Scene {
                 this.scale.height,
                 0x000000,
                 0.8
-            ).setDepth(1000);
+            ).setDepth(1000).setVisible(false);
             
-            // Defeat panel (from style guide)
             this.defeatPanel = this.add.rectangle(
                 this.scale.width / 2,
                 this.scale.height / 2,
                 400,
                 350,
                 window.COLORS?.danger || 0xe74c3c
-            ).setStrokeStyle(3, window.COLORS?.textLight || 0xecf0f1).setDepth(1001);
+            ).setStrokeStyle(3, window.COLORS?.textLight || 0xecf0f1).setDepth(1001).setVisible(false);
             
-            // Defeat text with better styling
             this.defeatText = this.add.text(
                 this.scale.width / 2,
                 this.scale.height / 2,
@@ -872,8 +955,10 @@ class GameScene extends Phaser.Scene {
      */
     handleAllLevelsCompleted(completionData) {
         console.log('All levels completed!', completionData);
-        this.statusText.setText('🏆 ALL LEVELS COMPLETED! 🏆');
-        this.statusText.setColor('#f1c40f');
+        if (this.statusText) {
+            this.statusText.setText('🏆 ALL LEVELS COMPLETED! 🏆');
+            this.statusText.setColor('#f1c40f');
+        }
         
         // Could show a special completion screen here
         // For now, just log the achievement
@@ -934,11 +1019,28 @@ class GameScene extends Phaser.Scene {
     handleSelectionChange(tiles) {
         if (tiles.length > 0) {
             const word = tiles.map(tile => tile.letter).join('');
-            this.statusText.setText(`Current word: "${word.toUpperCase()}"`);
-            this.statusText.setColor('#3498db');
+            
+            // Update HTML UI current word display
+            if (window.UIManager) {
+                window.UIManager.showCurrentWord(word.toUpperCase());
+            }
+            
+            // Keep Phaser status text for backward compatibility
+            if (this.statusText) {
+                this.statusText.setText(`Current word: "${word.toUpperCase()}"`);
+                this.statusText.setColor('#3498db');
+            }
         } else {
-            this.statusText.setText('Select tiles to form words!');
-            this.statusText.setColor('#7f8c8d');
+            // Clear HTML UI current word display
+            if (window.UIManager) {
+                window.UIManager.showCurrentWord('');
+            }
+            
+            // Keep Phaser status text for backward compatibility
+            if (this.statusText) {
+                this.statusText.setText('Select tiles to form words!');
+                this.statusText.setColor('#7f8c8d');
+            }
         }
     }
 
@@ -1039,6 +1141,22 @@ class GameScene extends Phaser.Scene {
     /**
      * Handle next level button click
      */
+    /**
+     * Handle next level button click from HTML UI
+     */
+    handleNextLevel() {
+        this.handleNextLevelClick();
+    }
+    
+    /**
+     * Handle restart level button click from HTML UI
+     */
+    restartLevel() {
+        if (this.gameStateManager) {
+            this.gameStateManager.restartLevel();
+        }
+    }
+    
     handleNextLevelClick() {
         // Hide victory modal
         if (this.victoryOverlay) this.victoryOverlay.setVisible(false);
@@ -1135,7 +1253,7 @@ class GameScene extends Phaser.Scene {
      * Update UI elements
      */
     updateUI() {
-        this.updateDebugInfo();
+        // this.updateDebugInfo(); // Commented out - using HTML UI layer instead
         this.updateHUD();
     }
     
@@ -1166,30 +1284,45 @@ class GameScene extends Phaser.Scene {
         // Use GameState for authoritative data
         const currentScore = this.gameStateManager.currentScore;
         const targetScore = this.gameStateManager.targetScore;
-        const progress = this.gameStateManager.getScoreProgress();
-        
-        // Update score display
-        this.scoreText.setText(currentScore.toString());
-        this.targetText.setText(`Target: ${targetScore}`);
-        
-        // Update progress bar using new method
-        this.updateProgressBar(progress / 100); // Convert percentage to 0-1 range
-        
-        // Update moves display from GameState
-        this.movesText.setText(this.gameStateManager.movesRemaining.toString());
-        
-        // Change moves color based on remaining moves
         const movesRemaining = this.gameStateManager.movesRemaining;
-        if (movesRemaining <= 3) {
-            this.movesText.setColor('#e74c3c'); // Red when low
-        } else if (movesRemaining <= 6) {
-            this.movesText.setColor('#f39c12'); // Orange when medium
-        } else {
-            this.movesText.setColor('#3498db'); // Blue when plenty
+        const maxMoves = this.gameStateManager.maxMoves;
+        
+        // Update HTML UI layer instead of Phaser UI
+        if (window.UIManager) {
+            window.UIManager.updateScore(currentScore, targetScore);
+            window.UIManager.updateMoves(movesRemaining, maxMoves);
         }
         
-        // Update level display
-        this.levelText.setText(`LEVEL ${this.currentLevel}`);
+        // Keep Phaser UI elements for backward compatibility (if they exist)
+        if (this.scoreText) {
+            this.scoreText.setText(currentScore.toString());
+        }
+        if (this.targetText) {
+            this.targetText.setText(`Target: ${targetScore}`);
+        }
+        if (this.movesText) {
+            this.movesText.setText(movesRemaining.toString());
+            
+            // Change moves color based on remaining moves
+            if (movesRemaining <= 3) {
+                this.movesText.setColor('#e74c3c'); // Red when low
+            } else if (movesRemaining <= 6) {
+                this.movesText.setColor('#f39c12'); // Orange when medium
+            } else {
+                this.movesText.setColor('#3498db'); // Blue when plenty
+            }
+        }
+        if (this.levelText) {
+            this.levelText.setText(`LEVEL ${this.currentLevel}`);
+        }
+        
+        // Update progress bar using new method (if exists) - commented out, using HTML UI layer instead
+        /*
+        if (this.updateProgressBar) {
+            const progress = this.gameStateManager.getScoreProgress();
+            this.updateProgressBar(progress / 100); // Convert percentage to 0-1 range
+        }
+        */
         
         // Sync local variables with GameState
         this.movesRemaining = this.gameStateManager.movesRemaining;

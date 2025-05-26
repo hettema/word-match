@@ -22,6 +22,10 @@ class ScoreSystem {
         this.chainReactionCount = 0;
         this.cascadeMultiplierActive = false;
         
+        // Best word tracking
+        this.bestWord = '';
+        this.bestWordScore = 0;
+        
         this.initialize();
     }
     
@@ -209,6 +213,11 @@ class ScoreSystem {
      */
     scoreWord(tiles) {
         const points = this.calculateWordScore(tiles);
+        const word = tiles.map(t => t.letter).join('');
+        
+        // Track best word
+        this.updateBestWord(word, points);
+        
         this.addScore(points);
         return points;
     }
@@ -218,6 +227,8 @@ class ScoreSystem {
      */
     resetScore() {
         this.currentScore = 0;
+        this.bestWord = '';
+        this.bestWordScore = 0;
         this.scene.events.emit('scoreUpdated', {
             currentScore: this.currentScore,
             targetScore: this.targetScore,
@@ -580,6 +591,34 @@ class ScoreSystem {
         this.settings = null;
         this.levelConfig = null;
         this.tileValues = null;
+    }
+    
+    /**
+     * Get the best word scored this level
+     * @returns {string} Best word
+     */
+    getBestWord() {
+        return this.bestWord;
+    }
+    
+    /**
+     * Get the best word score this level
+     * @returns {number} Best word score
+     */
+    getBestWordScore() {
+        return this.bestWordScore;
+    }
+    
+    /**
+     * Update best word tracking
+     * @param {string} word - The word
+     * @param {number} score - The word's score
+     */
+    updateBestWord(word, score) {
+        if (score > this.bestWordScore) {
+            this.bestWord = word;
+            this.bestWordScore = score;
+        }
     }
 }
 

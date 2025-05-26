@@ -177,6 +177,14 @@
   },
   "active": "dba328133ee3b571",
   "lastOpenFiles": [
+    "README.md",
+    "kanban-rules.md",
+    "word-match-tdd.md",
+    "word-match-prd.md",
+    "kanban.md",
+    "ui-02-victory-defeat-implementation-plan.md",
+    "ui-02-implementation-plan.md",
+    "word-match-ui-architecture.md",
     "word-match-simple-polish-demo.html",
     "word-match-simple-polish-demo1.html",
     "tests/test-level-progression.html",
@@ -184,14 +192,12 @@
     "tests/test-advanced-cascades.html",
     "index.html",
     "word-match-style-guide.md",
-    "kanban.md",
     "word-match-practical-style-guide.md",
     "tests/test-advanced-scoring.html",
     "word-match-style-implementation.md",
     "phaser-style-implementation.md",
     "tests/index.html",
     "tests/test-styles.css",
-    "tests/test-word-validator.html",
-    "tests/test-ui-hud.html"
+    "tests/test-word-validator.html"
   ]
 }

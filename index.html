@@ -29,7 +29,34 @@
 <body class="game-page">
     <!-- Game Container -->
     <div id="game-container">
-        <!-- Game canvas will be inserted here by Phaser -->
+        <!-- HTML UI Layer (HUD at top) -->
+        <div class="ui-layer">
+            <!-- HUD Elements -->
+            <div class="score-panel">
+                <div class="score-label">SCORE</div>
+                <div class="score-value" id="score">0</div>
+                
+                <div class="target-info">
+                    <div class="target-label" id="targetLabel">TARGET: 0</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressBar"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="moves-panel">
+                <div class="moves-value" id="movesRemaining">0</div>
+                <div class="score-label">MOVES</div>
+            </div>
+        </div>
+        
+        <!-- Game Board Area (Phaser canvas will be inserted here) -->
+        <div id="game-board-area" class="game-board-area">
+            <!-- Phaser canvas goes here -->
+        </div>
+        
+        <!-- Current word display -->
+        <div class="current-word" id="currentWord"></div>
         
         <!-- Loading Screen -->
         <div id="loading-screen" class="loading-screen">
@@ -50,6 +77,58 @@
                 <p id="error-message">Something went wrong loading the game.</p>
                 <button id="retry-button" class="game-button">Retry</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Victory Overlay -->
+    <div class="overlay victory-overlay" id="victoryOverlay">
+        <div class="overlay-content">
+            <h1 class="victory-title">Level Complete!</h1>
+            <div class="victory-stars">⭐⭐⭐</div>
+            
+            <div class="score-summary">
+                <div class="score-row">
+                    <span>Score:</span>
+                    <strong id="victoryScore">0</strong>
+                </div>
+                <div class="score-row">
+                    <span>Target:</span>
+                    <strong id="victoryTarget">0 ✓</strong>
+                </div>
+                <div class="score-row">
+                    <span>Moves Used:</span>
+                    <strong id="victoryMoves">0 / 0</strong>
+                </div>
+                <div class="score-row">
+                    <span>Best Word:</span>
+                    <strong id="victoryBestWord">--- (0 pts)</strong>
+                </div>
+            </div>
+            
+            <button class="overlay-button primary" id="nextLevelButton">Next Level</button>
+        </div>
+    </div>
+    
+    <!-- Defeat Overlay -->
+    <div class="overlay defeat-overlay" id="defeatOverlay">
+        <div class="overlay-content">
+            <h1 class="defeat-title">Out of Moves!</h1>
+            <div class="defeat-emoji">😢</div>
+            
+            <div class="lives-display">
+                <div class="lives-label">Game Over</div>
+                <div class="score-row">
+                    <span>Your Score:</span>
+                    <strong id="defeatScore" style="color: #e74c3c">0</strong>
+                </div>
+                <div class="score-row">
+                    <span>Target Score:</span>
+                    <strong id="defeatTarget" style="color: #e74c3c">0</strong>
+                </div>
+            </div>
+            
+            <button class="overlay-button danger" id="tryAgainButton">Try Again</button>
+            <button class="overlay-button" id="mainMenuButton">Main Menu</button>
         </div>
     </div>
 
@@ -124,18 +203,211 @@
         window.COLORS = COLORS;
         window.ANIMATIONS = ANIMATIONS;
         
-        // Game configuration
+        // HTML UI Management System
+        window.UIManager = {
+            // UI Elements
+            elements: {
+                score: null,
+                targetLabel: null,
+                progressBar: null,
+                movesRemaining: null,
+                currentWord: null,
+                victoryOverlay: null,
+                defeatOverlay: null,
+                gameContainer: null
+            },
+            
+            // Initialize UI elements
+            init() {
+                this.elements.score = document.getElementById('score');
+                this.elements.targetLabel = document.getElementById('targetLabel');
+                this.elements.progressBar = document.getElementById('progressBar');
+                this.elements.movesRemaining = document.getElementById('movesRemaining');
+                this.elements.currentWord = document.getElementById('currentWord');
+                this.elements.victoryOverlay = document.getElementById('victoryOverlay');
+                this.elements.defeatOverlay = document.getElementById('defeatOverlay');
+                this.elements.gameContainer = document.getElementById('game-container');
+                
+                // Setup overlay button handlers
+                this.setupOverlayHandlers();
+                
+                console.log('UIManager initialized');
+            },
+            
+            // Setup overlay button event handlers
+            setupOverlayHandlers() {
+                // Victory overlay buttons
+                document.getElementById('nextLevelButton').addEventListener('click', () => {
+                    this.closeOverlay('victory');
+                    if (window.game && window.game.scene.isActive('GameScene')) {
+                        window.game.scene.getScene('GameScene').handleNextLevel();
+                    }
+                });
+                
+                // Defeat overlay buttons
+                document.getElementById('tryAgainButton').addEventListener('click', () => {
+                    this.closeOverlay('defeat');
+                    if (window.game && window.game.scene.isActive('GameScene')) {
+                        window.game.scene.getScene('GameScene').restartLevel();
+                    }
+                });
+                
+                document.getElementById('mainMenuButton').addEventListener('click', () => {
+                    this.closeOverlay('defeat');
+                    // For now, just restart the current level
+                    if (window.game && window.game.scene.isActive('GameScene')) {
+                        window.game.scene.getScene('GameScene').restartLevel();
+                    }
+                });
+            },
+            
+            // Update score display
+            updateScore(current, target) {
+                if (this.elements.score) {
+                    this.elements.score.textContent = current.toLocaleString();
+                }
+                if (this.elements.targetLabel) {
+                    this.elements.targetLabel.textContent = `TARGET: ${target.toLocaleString()}`;
+                }
+                this.updateProgress(current, target);
+            },
+            
+            // Update progress bar
+            updateProgress(current, target) {
+                if (this.elements.progressBar) {
+                    const progress = Math.min((current / target) * 100, 100);
+                    this.elements.progressBar.style.width = progress + '%';
+                    
+                    // Add completion effect
+                    if (progress >= 100) {
+                        this.elements.progressBar.style.background = 'linear-gradient(90deg, #2ecc71, #27ae60)';
+                        this.elements.progressBar.style.boxShadow = '0 0 15px rgba(46, 204, 113, 0.8)';
+                    }
+                }
+            },
+            
+            // Update moves display
+            updateMoves(remaining, max) {
+                if (this.elements.movesRemaining) {
+                    this.elements.movesRemaining.textContent = remaining;
+                    
+                    // Update color based on remaining moves
+                    this.elements.movesRemaining.className = 'moves-value';
+                    if (remaining <= 2) {
+                        this.elements.movesRemaining.classList.add('low');
+                    } else if (remaining <= 5) {
+                        this.elements.movesRemaining.classList.add('medium');
+                    }
+                }
+            },
+            
+            // Show current word being traced
+            showCurrentWord(word) {
+                if (this.elements.currentWord) {
+                    if (word && word.length > 0) {
+                        this.elements.currentWord.textContent = word;
+                        this.elements.currentWord.classList.add('visible');
+                    } else {
+                        this.elements.currentWord.classList.remove('visible');
+                    }
+                }
+            },
+            
+            // Show victory overlay
+            showVictory(data) {
+                if (this.elements.victoryOverlay && this.elements.gameContainer) {
+                    // Update victory data
+                    document.getElementById('victoryScore').textContent = data.score.toLocaleString();
+                    document.getElementById('victoryTarget').textContent = `${data.target.toLocaleString()} ✓`;
+                    document.getElementById('victoryMoves').textContent = `${data.movesUsed} / ${data.maxMoves}`;
+                    document.getElementById('victoryBestWord').textContent = `${data.bestWord} (${data.bestScore} pts)`;
+                    
+                    // Show overlay with blur effect
+                    this.elements.gameContainer.classList.add('blurred');
+                    this.elements.victoryOverlay.classList.add('active');
+                    
+                    // Animate stars
+                    this.animateVictoryStars();
+                    
+                    // Create confetti
+                    this.createConfetti();
+                }
+            },
+            
+            // Show defeat overlay
+            showDefeat(data) {
+                if (this.elements.defeatOverlay && this.elements.gameContainer) {
+                    // Update defeat data
+                    document.getElementById('defeatScore').textContent = data.score.toLocaleString();
+                    document.getElementById('defeatTarget').textContent = data.target.toLocaleString();
+                    
+                    // Show overlay with blur effect
+                    this.elements.gameContainer.classList.add('blurred');
+                    this.elements.defeatOverlay.classList.add('active');
+                }
+            },
+            
+            // Close overlay
+            closeOverlay(type) {
+                if (this.elements.gameContainer) {
+                    this.elements.gameContainer.classList.remove('blurred');
+                }
+                
+                if (type === 'victory' && this.elements.victoryOverlay) {
+                    this.elements.victoryOverlay.classList.remove('active');
+                } else if (type === 'defeat' && this.elements.defeatOverlay) {
+                    this.elements.defeatOverlay.classList.remove('active');
+                }
+            },
+            
+            // Animate victory stars
+            animateVictoryStars() {
+                const stars = document.querySelector('.victory-stars');
+                if (stars) {
+                    stars.innerHTML = '';
+                    ['⭐', '⭐', '⭐'].forEach((star, index) => {
+                        setTimeout(() => {
+                            const span = document.createElement('span');
+                            span.textContent = star;
+                            span.style.display = 'inline-block';
+                            span.style.animation = 'star-appear 0.5s ease-out';
+                            stars.appendChild(span);
+                        }, index * 200);
+                    });
+                }
+            },
+            
+            // Create confetti effect
+            createConfetti() {
+                const colors = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6'];
+                for (let i = 0; i < 20; i++) {
+                    setTimeout(() => {
+                        const confetti = document.createElement('div');
+                        confetti.className = 'confetti';
+                        confetti.style.left = Math.random() * 100 + '%';
+                        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                        confetti.style.animationDelay = Math.random() * 0.5 + 's';
+                        confetti.style.animationDuration = (2 + Math.random() * 2) + 's';
+                        document.body.appendChild(confetti);
+                        
+                        setTimeout(() => confetti.remove(), 4000);
+                    }, i * 100);
+                }
+            }
+        };
+        
+        // Game configuration - increased height to prevent tile cutoff
         const gameConfig = {
             type: Phaser.AUTO,
-            width: 800,
-            height: 600,
-            backgroundColor: COLORS.bgDark,
-            parent: 'game-container',
+            width: 450,
+            height: 500,
+            backgroundColor: 'transparent', // Make canvas background transparent
+            parent: 'game-board-area',
             scale: {
-                mode: Phaser.Scale.FIT,
-                autoCenter: Phaser.Scale.CENTER_BOTH,
-                width: 800,
-                height: 600
+                mode: Phaser.Scale.NONE, // Don't scale, use exact size
+                autoCenter: Phaser.Scale.NO_CENTER, // Remove auto-centering to eliminate margins
+                width: 450,
+                height: 500
             },
             render: {
                 antialias: true,
@@ -162,8 +434,17 @@
                 loadingScreen = document.getElementById('loading-screen');
                 errorScreen = document.getElementById('error-screen');
                 
+                // Initialize UI Manager
+                window.UIManager.init();
+                
                 // Show loading screen
                 showLoadingScreen();
+                
+                // Debug: Log container dimensions
+                const gameContainer = document.getElementById('game-container');
+                const gameBoardArea = document.getElementById('game-board-area');
+                console.log('Game container dimensions:', gameContainer.offsetWidth, 'x', gameContainer.offsetHeight);
+                console.log('Game board area dimensions:', gameBoardArea.offsetWidth, 'x', gameBoardArea.offsetHeight);
                 
                 // Initialize Phaser game
                 game = new Phaser.Game(gameConfig);

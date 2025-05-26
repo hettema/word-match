@@ -95,20 +95,40 @@ class Grid {
      */
     calculateGridPosition() {
         const gameWidth = this.scene.scale.width;
+        const gameHeight = this.scene.scale.height;
         
         const totalGridWidth = this.width * this.tileSize + (this.width - 1) * this.gridPadding;
         const totalGridHeight = this.height * this.tileSize + (this.height - 1) * this.gridPadding;
         
-        // Position grid to align with fixed game board position
-        // Calculate board position same as in GameScene
-        const maxDimension = Math.max(totalGridWidth, totalGridHeight);
-        const boardSize = maxDimension + 20; // boardPadding
-        const hudHeight = 85;
-        const spacing = 20;
-        const boardY = hudHeight + spacing + boardSize / 2;
+        // Match the board background positioning from GameScene.createGameBoard()
+        const boardPadding = 8; // Same as in GameScene
+        const boardHeight = totalGridHeight + (boardPadding * 2);
+        const boardY = boardHeight / 2 + boardPadding;
         
+        // Position tiles to align with board background
         this.gridStartX = (gameWidth - totalGridWidth) / 2;
-        this.gridStartY = boardY - totalGridHeight / 2;
+        this.gridStartY = boardY - totalGridHeight / 2; // Align with board center
+        
+        // ENHANCED DEBUG LOGGING FOR POSITIONING BUG
+        console.log('🔍 GRID POSITIONING DEBUG - DETAILED ANALYSIS:');
+        console.log(`  🖼️ Canvas Dimensions: ${gameWidth}x${gameHeight}`);
+        console.log(`  📏 Grid Dimensions: ${this.width}x${this.height} tiles`);
+        console.log(`  📐 Tile Size: ${this.tileSize}px, Padding: ${this.gridPadding}px`);
+        console.log(`  📊 Total Grid Size: ${totalGridWidth}x${totalGridHeight}px`);
+        console.log(`  📦 Board Padding: ${boardPadding}px`);
+        console.log(`  📦 Board Height: ${boardHeight}px`);
+        console.log(`  📍 Board Y Position: ${boardY}px`);
+        console.log(`  🎯 Grid Start Position: (${this.gridStartX}, ${this.gridStartY})`);
+        console.log(`  🧮 Grid Y Calculation: boardY(${boardY}) - totalGridHeight/2(${totalGridHeight/2}) = ${this.gridStartY}`);
+        console.log(`  ⚠️  POTENTIAL ISSUE: Grid Y should be close to canvas center (${gameHeight/2})`);
+        
+        // Check if grid is being pushed down
+        const expectedCenterY = gameHeight / 2 - totalGridHeight / 2;
+        const yOffset = this.gridStartY - expectedCenterY;
+        if (Math.abs(yOffset) > 10) {
+            console.warn(`🚨 POSITIONING BUG DETECTED: Grid Y offset by ${yOffset.toFixed(1)}px from expected center!`);
+            console.warn(`   Expected Y: ${expectedCenterY.toFixed(1)}, Actual Y: ${this.gridStartY.toFixed(1)}`);
+        }
     }
     
     /**
@@ -148,6 +168,16 @@ class Grid {
         // Set world position
         const worldPos = this.gridToWorldPosition(gridX, gridY);
         tile.setWorldPosition(worldPos.x, worldPos.y);
+        
+        // DETAILED LOGGING for first few tiles to debug positioning
+        if (gridY === 0 && gridX < 3) {
+            console.log(`🔍 TILE POSITIONING DEBUG - Tile (${gridX}, ${gridY}):`);
+            console.log(`  📍 Grid Start: (${this.gridStartX}, ${this.gridStartY})`);
+            console.log(`  🌍 World Position: (${worldPos.x}, ${worldPos.y})`);
+            console.log(`  📏 Tile Size: ${this.tileSize}, Grid Padding: ${this.gridPadding}`);
+            console.log(`  🖼️ Canvas Size: ${this.scene.scale.width}x${this.scene.scale.height}`);
+            console.log(`  🎯 Actual Tile Display Position: x=${tile.container?.x || 'N/A'}, y=${tile.container?.y || 'N/A'}`);
+        }
         
         // Store in grid
         this.tiles[gridY][gridX] = tile;

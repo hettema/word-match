@@ -482,135 +482,75 @@ createScoreDisplay() {
 }
 ```
 
-## Overlay Implementation
+## UI Architecture: Hybrid Approach
 
-### Victory Overlay
+### **IMPORTANT: Architecture Evolution**
+This style guide originally specified Phaser-based overlays, but the project has evolved to use a **hybrid architecture** for optimal performance and maintainability:
+
+- **Phaser Layer:** Game board, tiles, effects, animations (everything in this guide ✅)
+- **HTML/CSS Layer:** Victory/defeat overlays, HUD elements, menus, UI components
+
+**Reference:** See [`word-match-ui-architecture.md`](word-match-ui-architecture.md) for complete hybrid architecture documentation.
+
+### Victory/Defeat Overlays (HTML-based)
+**Implementation:** Use HTML modals with CSS animations instead of Phaser containers.
+
+**Target Reference:** [`word-match-simple-polish-demo.html`](word-match-simple-polish-demo.html) shows the exact implementation.
+
+**Key Features:**
+- Rich HTML structure with score summaries and progress displays
+- CSS animations (bounce effects, star animations, confetti)
+- Professional typography and responsive design
+- Proper Z-index management with game canvas blur
+- Native accessibility and mobile optimization
+
+**Integration with Phaser:**
 ```javascript
-class VictoryOverlay extends Phaser.GameObjects.Container {
-    constructor(scene) {
-        super(scene, scene.scale.width / 2, scene.scale.height / 2);
-        
-        // Dark background
-        this.darkBg = scene.add.rectangle(0, 0, scene.scale.width, scene.scale.height, 0x000000, 0.8);
-        this.darkBg.setOrigin(0.5);
-        
-        // Panel
-        this.panel = scene.add.rectangle(0, 0, 400, 500, COLORS.bgDark);
-        this.panel.setStrokeStyle(3, COLORS.success);
-        
-        // Title
-        this.title = scene.add.text(0, -180, 'LEVEL COMPLETE!', {
-            fontFamily: 'Rubik',
-            fontSize: '32px',
-            fontStyle: 'bold',
-            color: '#2ecc71'
-        });
-        this.title.setOrigin(0.5);
-        
-        // Stars
-        this.createStars();
-        
-        // Score summary
-        this.createScoreSummary();
-        
-        // Button
-        this.nextButton = this.createButton(0, 150, 'NEXT LEVEL', COLORS.success);
-        
-        // Add all
-        this.add([this.darkBg, this.panel, this.title, this.stars, this.summary, this.nextButton]);
-        
-        // Initially hidden
-        this.setAlpha(0);
-        this.setScale(0.8);
-        
-        scene.add.existing(this);
-    }
+// In GameScene.js - trigger HTML overlays from Phaser events
+handleVictoryWithTransition(victoryData) {
+    // Blur the game canvas
+    document.getElementById('game-container').classList.add('blurred');
     
-    show() {
-        // Blur game
-        this.scene.cameras.main.postFX.addBlur(5);
-        
-        // Animate in
-        this.scene.tweens.add({
-            targets: this,
-            alpha: 1,
-            scale: 1,
-            duration: 500,
-            ease: 'Back.easeOut'
-        });
-        
-        // Animate stars
-        this.animateStars();
-        
-        // Simple confetti
-        this.createConfetti();
-    }
+    // Show HTML victory overlay
+    const victoryOverlay = document.getElementById('victoryOverlay');
+    victoryOverlay.classList.add('active');
     
-    createConfetti() {
-        const colors = [0xe74c3c, 0x3498db, 0x2ecc71, 0xf39c12, 0x9b59b6];
-        
-        for (let i = 0; i < 20; i++) {
-            const confetti = this.scene.add.rectangle(
-                Phaser.Math.Between(0, this.scene.scale.width),
-                -50,
-                10,
-                10,
-                colors[Phaser.Math.Between(0, colors.length - 1)]
-            );
-            
-            this.scene.tweens.add({
-                targets: confetti,
-                y: this.scene.scale.height + 50,
-                angle: 720,
-                duration: Phaser.Math.Between(2000, 4000),
-                delay: i * 100,
-                onComplete: () => confetti.destroy()
-            });
-        }
-    }
+    // Update overlay content with game data
+    this.updateVictoryOverlayData(victoryData);
 }
 ```
 
-### Defeat Overlay
-```javascript
-class DefeatOverlay extends Phaser.GameObjects.Container {
-    constructor(scene) {
-        super(scene, scene.scale.width / 2, scene.scale.height / 2);
-        
-        // Similar structure with red theme
-        this.panel = scene.add.rectangle(0, 0, 400, 450, COLORS.bgDark);
-        this.panel.setStrokeStyle(3, COLORS.danger);
-        
-        this.title = scene.add.text(0, -150, 'OUT OF MOVES!', {
-            fontFamily: 'Rubik',
-            fontSize: '32px',
-            fontStyle: 'bold',
-            color: '#e74c3c'
-        });
-        this.title.setOrigin(0.5);
-        
-        // Sad emoji with pulse
-        this.emoji = scene.add.text(0, -70, '😢', {
-            fontSize: '64px'
-        });
-        this.emoji.setOrigin(0.5);
-        
-        this.scene.tweens.add({
-            targets: this.emoji,
-            scale: { from: 1, to: 1.1 },
-            duration: 2000,
-            yoyo: true,
-            repeat: -1,
-            ease: 'Sine.easeInOut'
-        });
-        
-        // Lives and buttons
-        this.createLivesDisplay();
-        this.tryButton = this.createButton(-70, 120, 'TRY AGAIN', COLORS.danger);
-        this.menuButton = this.createButton(70, 120, 'MENU', COLORS.primary);
-        
-        // Add all elements...
-    }
+**CSS Structure:**
+```css
+/* Game canvas blur effect */
+.game-container.blurred {
+    filter: blur(4px);
+    opacity: 0.7;
+}
+
+/* Overlay positioning */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 1000;
+    display: none;
+}
+
+.overlay.active {
+    display: flex;
+    animation: fade-in 0.3s ease-out;
+}
+
+/* Victory/defeat modal styling */
+.overlay-content {
+    background: #34495e;
+    border-radius: 20px;
+    padding: 30px;
+    animation: overlay-bounce 0.5s ease-out;
 }
 ```
 
@@ -677,23 +617,33 @@ class TilePool {
 
 ## Final Notes
 
-This guide prioritizes:
-1. **Simplicity** - Uses Phaser rectangles and basic shapes
-2. **Performance** - No complex effects or shaders
+## Final Notes
+
+This guide establishes the **game board visual foundation** using:
+1. **Simplicity** - Phaser rectangles and basic shapes for tiles and effects
+2. **Performance** - No complex shaders, optimized for 60 FPS
 3. **Maintainability** - Clean, understandable code
 4. **Ship-ability** - Everything can be implemented quickly
 
-All visual effects use:
-- Phaser's built-in tween system
-- Basic shapes (rectangle, circle, text)
-- Simple color tints and alpha
-- Standard easing functions
+### **Hybrid Architecture Summary:**
 
-No need for:
-- Complex gradients
-- PostFX pipeline
-- Particle systems (except simple ones)
-- Custom shaders
-- Texture atlases
+**✅ Phaser Layer (This Guide):**
+- Rectangle-based tiles with solid colors
+- Hover/selection animations and feedback
+- Explosion effects, surge rings, cascade animations
+- Word trace lines and particle effects
+- All game board interactions and visual effects
 
-**Result**: A polished, professional game that ships on time!
+**🌐 HTML/CSS Layer (See [`word-match-ui-architecture.md`](word-match-ui-architecture.md)):**
+- Victory/defeat overlay modals
+- HUD elements (score, moves, progress)
+- Menu systems and navigation
+- Loading screens and error handling
+
+### **Implementation Status:**
+- **Game Board Effects:** ✅ Complete (following this guide)
+- **UI Overlays:** 🔄 Ready for HTML implementation (see demo reference)
+
+**Next Steps:** Implement HTML-based victory/defeat overlays using [`word-match-simple-polish-demo.html`](word-match-simple-polish-demo.html) as the target design.
+
+**Result**: A polished, professional game with optimal performance and maintainability!
