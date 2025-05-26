@@ -100,35 +100,15 @@ class Grid {
         const totalGridWidth = this.width * this.tileSize + (this.width - 1) * this.gridPadding;
         const totalGridHeight = this.height * this.tileSize + (this.height - 1) * this.gridPadding;
         
-        // Match the board background positioning from GameScene.createGameBoard()
-        const boardPadding = 8; // Same as in GameScene
-        const boardHeight = totalGridHeight + (boardPadding * 2);
-        const boardY = boardHeight / 2 + boardPadding;
-        
-        // Position tiles to align with board background
+        // Simple centered positioning - no board background alignment needed
         this.gridStartX = (gameWidth - totalGridWidth) / 2;
-        this.gridStartY = boardY - totalGridHeight / 2; // Align with board center
+        this.gridStartY = (gameHeight - totalGridHeight) / 2;
         
-        // ENHANCED DEBUG LOGGING FOR POSITIONING BUG
-        console.log('🔍 GRID POSITIONING DEBUG - DETAILED ANALYSIS:');
-        console.log(`  🖼️ Canvas Dimensions: ${gameWidth}x${gameHeight}`);
-        console.log(`  📏 Grid Dimensions: ${this.width}x${this.height} tiles`);
-        console.log(`  📐 Tile Size: ${this.tileSize}px, Padding: ${this.gridPadding}px`);
-        console.log(`  📊 Total Grid Size: ${totalGridWidth}x${totalGridHeight}px`);
-        console.log(`  📦 Board Padding: ${boardPadding}px`);
-        console.log(`  📦 Board Height: ${boardHeight}px`);
-        console.log(`  📍 Board Y Position: ${boardY}px`);
-        console.log(`  🎯 Grid Start Position: (${this.gridStartX}, ${this.gridStartY})`);
-        console.log(`  🧮 Grid Y Calculation: boardY(${boardY}) - totalGridHeight/2(${totalGridHeight/2}) = ${this.gridStartY}`);
-        console.log(`  ⚠️  POTENTIAL ISSUE: Grid Y should be close to canvas center (${gameHeight/2})`);
-        
-        // Check if grid is being pushed down
-        const expectedCenterY = gameHeight / 2 - totalGridHeight / 2;
-        const yOffset = this.gridStartY - expectedCenterY;
-        if (Math.abs(yOffset) > 10) {
-            console.warn(`🚨 POSITIONING BUG DETECTED: Grid Y offset by ${yOffset.toFixed(1)}px from expected center!`);
-            console.warn(`   Expected Y: ${expectedCenterY.toFixed(1)}, Actual Y: ${this.gridStartY.toFixed(1)}`);
-        }
+        console.log('🔍 GRID POSITIONING - CENTERED:');
+        console.log(`  🖼️ Canvas: ${gameWidth}x${gameHeight}`);
+        console.log(`  📊 Grid: ${totalGridWidth}x${totalGridHeight}`);
+        console.log(`  🎯 Position: (${this.gridStartX.toFixed(1)}, ${this.gridStartY.toFixed(1)})`);
+        console.log(`  ✅ Grid perfectly centered on transparent canvas`);
     }
     
     /**

@@ -1,0 +1,3 @@
+# Netlify redirects file
+# Fallback for any unmatched routes to serve the main game
+/*    /index.html   200

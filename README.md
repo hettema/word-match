@@ -27,7 +27,10 @@ A challenging browser-based puzzle game that combines Scrabble-style word buildi
 
 ## 🚀 Quick Start
 
-### Play Now
+### Play Online
+The game is deployed and ready to play at: [Your Netlify URL]
+
+### Local Development
 ```bash
 # Clone the repository
 git clone <repository-url>
@@ -38,6 +41,20 @@ python3 -m http.server 8000
 
 # Open in browser
 open http://localhost:8000
+```
+
+### Deploy to Netlify
+```bash
+# 1. Push to GitHub repository
+git add .
+git commit -m "feat: add netlify deployment config"
+git push origin main
+
+# 2. Connect to Netlify
+# - Go to https://netlify.com
+# - Click "New site from Git"
+# - Connect your GitHub repository
+# - Deploy settings are automatically configured via netlify.toml
 ```
 
 ### Browser Requirements

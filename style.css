@@ -31,13 +31,13 @@ body.game-page {
     height: 100vh;
     max-width: 800px;
     max-height: 800px;
-    background: #2c3e50;
+    background: transparent; /* Remove black background */
     border-radius: 8px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    box-shadow: none; /* Remove shadow that creates visual boundaries */
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    padding: 20px;
+    padding: 5px; /* Reduce padding for more breathing room */
     box-sizing: border-box;
 }
 
@@ -168,7 +168,7 @@ body.game-page {
     #game-container {
         max-width: 800px;
         max-height: 800px;
-        padding: 30px;
+        padding: 10px; /* Reduced from 30px */
     }
     
     .ui-layer {
@@ -195,7 +195,7 @@ body.game-page {
     #game-container {
         max-width: 700px;
         max-height: 700px;
-        padding: 25px;
+        padding: 8px; /* Reduced from 25px */
     }
     
     .ui-layer {
@@ -222,7 +222,7 @@ body.game-page {
     #game-container {
         max-width: 600px;
         max-height: 600px;
-        padding: 20px;
+        padding: 6px; /* Reduced from 20px */
         border-radius: 4px;
     }
     
@@ -261,7 +261,7 @@ body.game-page {
     #game-container {
         max-width: 500px;
         max-height: 500px;
-        padding: 15px;
+        padding: 4px; /* Reduced from 15px */
         border-radius: 0;
     }
     
@@ -300,7 +300,7 @@ body.game-page {
     #game-container {
         max-width: 400px;
         max-height: 400px;
-        padding: 10px;
+        padding: 3px; /* Reduced from 10px */
     }
     
     .ui-layer {

@@ -426,78 +426,12 @@ class GameScene extends Phaser.Scene {
     
     /**
      * Create game board background with shadow effect
+     * DISABLED: Removing board background to eliminate black background
      */
     createGameBoard() {
-        const levelConfig = this.registry.get('levelConfig');
-        const gridWidth = levelConfig?.grid?.width || 6;
-        const gridHeight = levelConfig?.grid?.height || 6;
-        const tileSize = this.registry.get('settings')?.display?.tileSize || 64;
-        const gridPadding = this.registry.get('settings')?.display?.gridPadding || 10;
-        
-        // Calculate exact grid dimensions
-        const totalGridWidth = gridWidth * tileSize + (gridWidth - 1) * gridPadding;
-        const totalGridHeight = gridHeight * tileSize + (gridHeight - 1) * gridPadding;
-        
-        // Create board background that exactly fits the tiles with minimal padding
-        const boardPadding = 8; // Minimal padding around tiles
-        const boardWidth = totalGridWidth + (boardPadding * 2);
-        const boardHeight = totalGridHeight + (boardPadding * 2);
-        
-        // Position board to start at top to match tile positioning (gridStartY = 0)
-        const boardX = this.scale.width / 2;
-        const boardY = boardHeight / 2 + boardPadding; // Position board to start at top like tiles
-        
-        // ENHANCED DEBUG LOGGING FOR POSITIONING BUG
-        console.log('🎮 BOARD BACKGROUND DEBUG - DETAILED ANALYSIS:');
-        console.log(`  📏 Grid Config: ${gridWidth}x${gridHeight} tiles`);
-        console.log(`  📐 Tile Size: ${tileSize}px, Padding: ${gridPadding}px`);
-        console.log(`  📊 Total Grid: ${totalGridWidth}x${totalGridHeight}px`);
-        console.log(`  📦 Board Padding: ${boardPadding}px`);
-        console.log(`  📦 Board Size: ${boardWidth}x${boardHeight}px`);
-        console.log(`  📍 Board Position: (${boardX}, ${boardY})`);
-        console.log(`  🖼️ Canvas Size: ${this.scale.width}x${this.scale.height}`);
-        console.log(`  📐 Board Top Edge: ${boardY - boardHeight/2} (should be ~${this.scale.height/2 - totalGridHeight/2})`);
-        console.log(`  📐 Board Bottom Edge: ${boardY + boardHeight/2}`);
-        console.log(`  🧮 Board Y Calculation: boardHeight/2(${boardHeight/2}) + boardPadding(${boardPadding}) = ${boardY}`);
-        
-        // Check if board is positioned correctly
-        const expectedCenterY = this.scale.height / 2;
-        const yOffset = boardY - expectedCenterY;
-        if (Math.abs(yOffset) > 10) {
-            console.warn(`🚨 BOARD POSITIONING BUG DETECTED: Board Y offset by ${yOffset.toFixed(1)}px from canvas center!`);
-            console.warn(`   Expected Y: ${expectedCenterY.toFixed(1)}, Actual Y: ${boardY.toFixed(1)}`);
-            console.warn(`   This calculation seems wrong: boardHeight/2 + boardPadding pushes board DOWN instead of centering it`);
-        }
-        
-        // Create subtle shadow
-        this.boardShadow = this.add.graphics();
-        this.boardShadow.fillStyle(0x000000, 0.15);
-        this.boardShadow.fillRoundedRect(
-            boardX - boardWidth/2 + 2,
-            boardY - boardHeight/2 + 2,
-            boardWidth,
-            boardHeight,
-            8
-        );
-        
-        // Create main board background - exactly sized to tiles
-        this.boardBackground = this.add.graphics();
-        this.boardBackground.fillStyle(window.COLORS?.bgPanel || 0x34495e, 0.9);
-        this.boardBackground.lineStyle(2, window.COLORS?.border || 0x2c3e50);
-        this.boardBackground.fillRoundedRect(
-            boardX - boardWidth/2,
-            boardY - boardHeight/2,
-            boardWidth,
-            boardHeight,
-            8
-        );
-        this.boardBackground.strokeRoundedRect(
-            boardX - boardWidth/2,
-            boardY - boardHeight/2,
-            boardWidth,
-            boardHeight,
-            8
-        );
+        console.log('🎮 BOARD BACKGROUND: Skipped - using transparent background for cleaner appearance');
+        // Board background creation disabled to remove black background
+        // Tiles will render directly on the transparent canvas background
     }
     
     /**
