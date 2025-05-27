@@ -29,18 +29,31 @@ class Grid {
         
         // Make tile size responsive based on screen width
         const screenWidth = window.innerWidth;
+        
+        // Add debug logging to help diagnose the issue
+        console.log(`📱 DEVICE DEBUG - Screen width: ${screenWidth}px, User Agent: ${navigator.userAgent}`);
+        
+        // Force mobile layout for all devices under 800px to ensure proper spacing
         if (screenWidth <= 375) {
             // Very small screens
-            this.tileSize = 42; // Slightly smaller tiles
-            this.gridPadding = 8; // Increased padding for better spacing
+            this.tileSize = 38; // Much smaller tiles
+            this.gridPadding = 12; // Much larger padding
+            console.log(`📱 USING VERY SMALL SCREEN LAYOUT: tileSize=${this.tileSize}, gridPadding=${this.gridPadding}`);
         } else if (screenWidth <= 480) {
             // Small mobile screens (like iPhone 15)
-            this.tileSize = 48; // Slightly smaller tiles
-            this.gridPadding = 8; // Increased padding for better spacing
+            this.tileSize = 40; // Much smaller tiles
+            this.gridPadding = 12; // Much larger padding
+            console.log(`📱 USING SMALL MOBILE LAYOUT: tileSize=${this.tileSize}, gridPadding=${this.gridPadding}`);
+        } else if (screenWidth <= 800) {
+            // Medium screens (tablets, etc.)
+            this.tileSize = 48;
+            this.gridPadding = 10;
+            console.log(`📱 USING MEDIUM SCREEN LAYOUT: tileSize=${this.tileSize}, gridPadding=${this.gridPadding}`);
         } else {
             // Default size for larger screens
             this.tileSize = settings.display?.tileSize || 64;
             this.gridPadding = settings.display?.gridPadding || 6;
+            console.log(`🖥️ USING DESKTOP LAYOUT: tileSize=${this.tileSize}, gridPadding=${this.gridPadding}`);
         }
         
         console.log(`🔧 RESPONSIVE: Screen width ${screenWidth}px → Tile size ${this.tileSize}px, padding ${this.gridPadding}px`);
@@ -132,12 +145,32 @@ class Grid {
         this.gridStartX = boardDimensions.x + innerPaddingX;
         this.gridStartY = boardDimensions.y + innerPaddingY;
         
+        // Add debug logging for mobile
+        const screenWidth = window.innerWidth;
         console.log('🔍 GRID POSITIONING - WITHIN SQUARE BOARD:');
+        console.log(`  📱 Screen Width: ${screenWidth}px`);
         console.log(`  🎨 Board: Square ${boardDimensions.size}x${boardDimensions.size} at (${boardDimensions.x}, ${boardDimensions.y})`);
         console.log(`  📊 Grid: ${totalGridWidth}x${totalGridHeight}`);
         console.log(`  🎯 Position: (${this.gridStartX.toFixed(1)}, ${this.gridStartY.toFixed(1)})`);
         console.log(`  📐 Inner Padding: X=${innerPaddingX.toFixed(1)}, Y=${innerPaddingY.toFixed(1)}`);
+        console.log(`  📏 Tile Size: ${this.tileSize}, Grid Padding: ${this.gridPadding}`);
         console.log(`  ✅ Grid centered within square board with equal padding`);
+        
+        // For mobile devices, ensure we have enough padding
+        if (screenWidth <= 480) {
+            // Ensure minimum padding for mobile
+            const minPadding = 8;
+            if (innerPaddingX < minPadding) {
+                // Adjust grid start position to ensure minimum padding
+                this.gridStartX = boardDimensions.x + minPadding;
+                console.log(`  📱 Mobile adjustment: Increased X padding to ${minPadding}px`);
+            }
+            if (innerPaddingY < minPadding) {
+                // Adjust grid start position to ensure minimum padding
+                this.gridStartY = boardDimensions.y + minPadding;
+                console.log(`  📱 Mobile adjustment: Increased Y padding to ${minPadding}px`);
+            }
+        }
     }
     
     /**
@@ -146,6 +179,7 @@ class Grid {
     fallbackGridPositioning() {
         const gameWidth = this.scene.scale.width;
         const gameHeight = this.scene.scale.height;
+        const screenWidth = window.innerWidth;
         
         const totalGridWidth = this.width * this.tileSize + (this.width - 1) * this.gridPadding;
         const totalGridHeight = this.height * this.tileSize + (this.height - 1) * this.gridPadding;
@@ -155,9 +189,25 @@ class Grid {
         this.gridStartY = (gameHeight - totalGridHeight) / 2;
         
         console.log('⚠️ FALLBACK GRID POSITIONING - CENTERED:');
-        console.log(`  🖼️ Canvas: ${gameWidth}x${gameHeight}`);
+        console.log(`  📱 Screen Width: ${screenWidth}px`);
+        console.log(`  �️ Canvas: ${gameWidth}x${gameHeight}`);
         console.log(`  📊 Grid: ${totalGridWidth}x${totalGridHeight}`);
         console.log(`  🎯 Position: (${this.gridStartX.toFixed(1)}, ${this.gridStartY.toFixed(1)})`);
+        console.log(`  📏 Tile Size: ${this.tileSize}, Grid Padding: ${this.gridPadding}`);
+        
+        // For mobile devices, ensure we have enough padding
+        if (screenWidth <= 480) {
+            // Ensure minimum padding for mobile
+            const minPadding = 8;
+            if (this.gridStartX < minPadding) {
+                this.gridStartX = minPadding;
+                console.log(`  📱 Mobile adjustment: Increased X padding to ${minPadding}px`);
+            }
+            if (this.gridStartY < minPadding) {
+                this.gridStartY = minPadding;
+                console.log(`  📱 Mobile adjustment: Increased Y padding to ${minPadding}px`);
+            }
+        }
     }
     
     /**
@@ -523,16 +573,28 @@ class Grid {
         let newTileSize = this.tileSize;
         let newPadding = this.gridPadding;
         
+        // Use the same values as in the constructor for consistency
         if (screenWidth <= 375) {
-            newTileSize = 44;
-            newPadding = 4;
+            // Very small screens
+            newTileSize = 38; // Much smaller tiles
+            newPadding = 12; // Much larger padding
+            console.log(`📱 LAYOUT UPDATE: Using very small screen layout`);
         } else if (screenWidth <= 480) {
-            newTileSize = 52;
-            newPadding = 5;
+            // Small mobile screens (like iPhone 15)
+            newTileSize = 40; // Much smaller tiles
+            newPadding = 12; // Much larger padding
+            console.log(`📱 LAYOUT UPDATE: Using small mobile layout`);
+        } else if (screenWidth <= 800) {
+            // Medium screens (tablets, etc.)
+            newTileSize = 48;
+            newPadding = 10;
+            console.log(`📱 LAYOUT UPDATE: Using medium screen layout`);
         } else {
+            // Default size for larger screens
             const settings = this.scene.registry.get('settings') || {};
             newTileSize = settings.display?.tileSize || 64;
             newPadding = settings.display?.gridPadding || 6;
+            console.log(`🖥️ LAYOUT UPDATE: Using desktop layout`);
         }
         
         // Only recalculate if size changed
