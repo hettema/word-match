@@ -898,28 +898,33 @@ body.game-page {
 
 /* Current word display */
 .current-word {
-    position: relative;
-    bottom: 0;
+    position: absolute;
+    top: 10px; /* Position at the very top */
     left: 50%;
     transform: translateX(-50%);
     background: rgba(0, 217, 255, 0.15);
-    padding: 12px 24px;
-    border-radius: 25px;
+    padding: 4px 16px; /* Reduced vertical padding */
+    border-radius: 20px; /* Smaller radius */
     border: 2px solid #00d9ff;
     color: #00d9ff;
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 700;
-    letter-spacing: 3px;
+    letter-spacing: 2px;
+    line-height: 1; /* Tighter line height */
+    height: auto; /* Let height be determined by content */
+    max-height: 30px; /* Limit maximum height */
+    display: flex; /* Use flexbox for vertical centering */
+    align-items: center; /* Center content vertically */
+    justify-content: center; /* Center content horizontally */
     opacity: 0;
     transition: all 0.3s ease;
     backdrop-filter: blur(10px);
-    z-index: 50;
-    min-width: 100px;
+    z-index: 101;
+    min-width: 80px;
     text-align: center;
     box-shadow: 0 4px 20px rgba(0, 217, 255, 0.3);
-    flex-shrink: 0; /* Prevent shrinking */
-    margin-top: 20px; /* Space above instead of below */
-    margin-bottom: 40px; /* More space below to prevent cutoff */
+    pointer-events: none;
+    margin: 0;
 }
 
 .current-word.visible {
