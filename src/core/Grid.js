@@ -38,12 +38,12 @@ class Grid {
         if (isMobile || screenWidth <= 480) {
             // Mobile devices (including iPhone 15)
             this.tileSize = 36; // Even smaller tiles - MUST MATCH Tile.js
-            this.gridPadding = 8; // Moderate padding - we're making tiles smaller instead
+            this.gridPadding = 3; // Very small padding as requested
             console.log(`📱 FORCING MOBILE LAYOUT: tileSize=${this.tileSize}, gridPadding=${this.gridPadding}`);
         } else if (screenWidth <= 800) {
             // Medium screens (tablets, etc.)
             this.tileSize = 48;
-            this.gridPadding = 8;
+            this.gridPadding = 5;
             console.log(`📱 USING MEDIUM SCREEN LAYOUT: tileSize=${this.tileSize}, gridPadding=${this.gridPadding}`);
         } else {
             // Default size for larger screens
@@ -582,12 +582,12 @@ class Grid {
         if (isMobile || screenWidth <= 480) {
             // Mobile devices (including iPhone 15)
             newTileSize = 36; // Even smaller tiles - MUST MATCH constructor
-            newPadding = 8; // Moderate padding - we're making tiles smaller instead
+            newPadding = 3; // Very small padding as requested - MUST MATCH constructor
             console.log(`📱 LAYOUT UPDATE: FORCING MOBILE LAYOUT: tileSize=${newTileSize}, gridPadding=${newPadding}`);
         } else if (screenWidth <= 800) {
             // Medium screens (tablets, etc.)
             newTileSize = 48;
-            newPadding = 8;
+            newPadding = 5;
             console.log(`📱 LAYOUT UPDATE: Using medium screen layout`);
         } else {
             // Default size for larger screens
