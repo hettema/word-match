@@ -78,12 +78,28 @@ class Tile {
      * Create visual representation of the tile using a container for unified positioning
      */
     createVisuals() {
-        const tileSize = this.scene.registry.get('settings')?.display?.tileSize || 64;
+        // Check if we're on a mobile device
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const screenWidth = window.innerWidth;
+        
+        // Force smaller tiles on mobile devices
+        let tileSize;
+        if (isMobile || screenWidth <= 480) {
+            // Much smaller tiles on mobile
+            tileSize = 36;
+            console.log(`📱 TILE.JS: FORCING SMALLER TILE SIZE ON MOBILE: ${tileSize}px`);
+        } else if (screenWidth <= 800) {
+            // Medium screens
+            tileSize = 48;
+        } else {
+            // Use settings or default for larger screens
+            tileSize = this.scene.registry.get('settings')?.display?.tileSize || 64;
+        }
         
         // Visual properties from style guide
         this.tileSize = tileSize;
-        this.strokeWidth = 2;
-        this.selectedStrokeWidth = 4;
+        this.strokeWidth = isMobile ? 1 : 2; // Thinner stroke on mobile
+        this.selectedStrokeWidth = isMobile ? 2 : 4; // Thinner selected stroke on mobile
         
         // Create a container to hold all tile elements
         this.container = this.scene.add.container(this.worldX, this.worldY);
@@ -117,7 +133,9 @@ class Tile {
      */
     drawRoundedTile(selected = false) {
         const tileSize = this.tileSize;
-        const radius = 8; // Rounded corner radius
+        // Use smaller radius on mobile devices
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const radius = isMobile ? 6 : 8; // Smaller rounded corner radius on mobile
         const color = this.getTileColor();
         
         // Choose border color and width based on selection state
@@ -147,7 +165,9 @@ class Tile {
      */
     redrawTileWithColor(color) {
         const tileSize = this.tileSize;
-        const radius = 8; // Rounded corner radius
+        // Use smaller radius on mobile devices
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const radius = isMobile ? 6 : 8; // Smaller rounded corner radius on mobile
         
         // Choose border color and width based on selection/highlight state
         let borderColor, strokeWidth;
@@ -180,6 +200,10 @@ class Tile {
      */
     createText() {
         const tileSize = this.tileSize;
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        
+        // Use smaller font sizes on mobile
+        const fontSizeMultiplier = isMobile ? 0.9 : 1.0; // 10% smaller on mobile
         
         if (this.isRevealed) {
             // For special tiles, show letter in center and emoji in lower left
@@ -191,7 +215,7 @@ class Tile {
                     this.letter,
                     {
                         fontFamily: 'Rubik, Arial, sans-serif',
-                        fontSize: `${Math.floor(tileSize * 0.375)}px`,
+                        fontSize: `${Math.floor(tileSize * 0.375 * fontSizeMultiplier)}px`,
                         fontStyle: 'bold',
                         color: this.getTextColor(),
                         align: 'center'
@@ -207,7 +231,7 @@ class Tile {
                         -tileSize * 0.25,
                         this.getEmojiForType(),
                         {
-                            fontSize: `${Math.floor(tileSize * 0.25)}px`
+                            fontSize: `${Math.floor(tileSize * 0.25 * fontSizeMultiplier)}px`
                         }
                     );
                     this.emojiText.setOrigin(0.5, 0.5);
@@ -222,7 +246,7 @@ class Tile {
                         tileSize * 0.25,
                         this.getEmojiForType(),
                         {
-                            fontSize: `${Math.floor(tileSize * 0.25)}px`
+                            fontSize: `${Math.floor(tileSize * 0.25 * fontSizeMultiplier)}px`
                         }
                     );
                     this.emojiText.setOrigin(0.5, 0.5);
@@ -237,7 +261,7 @@ class Tile {
                         '×2',
                         {
                             fontFamily: 'Rubik, Arial, sans-serif',
-                            fontSize: `${Math.floor(tileSize * 0.2)}px`,
+                            fontSize: `${Math.floor(tileSize * 0.2 * fontSizeMultiplier)}px`,
                             fontStyle: 'bold',
                             color: this.getTextColor()
                         }
@@ -253,7 +277,7 @@ class Tile {
                     this.letter,
                     {
                         fontFamily: 'Rubik, Arial, sans-serif',
-                        fontSize: `${Math.floor(tileSize * 0.375)}px`,
+                        fontSize: `${Math.floor(tileSize * 0.375 * fontSizeMultiplier)}px`,
                         fontStyle: 'bold',
                         color: this.getTextColor(),
                         align: 'center'
@@ -271,7 +295,7 @@ class Tile {
                     this.value.toString(),
                     {
                         fontFamily: 'Rubik, Arial, sans-serif',
-                        fontSize: `${Math.floor(tileSize * 0.18)}px`,
+                        fontSize: `${Math.floor(tileSize * 0.18 * fontSizeMultiplier)}px`,
                         fontStyle: 'bold',
                         color: 'rgba(0, 0, 0, 0.6)'
                     }
@@ -287,7 +311,7 @@ class Tile {
                 '?',
                 {
                     fontFamily: 'Rubik, Arial, sans-serif',
-                    fontSize: `${Math.floor(tileSize * 0.5)}px`,
+                    fontSize: `${Math.floor(tileSize * 0.5 * fontSizeMultiplier)}px`,
                     fontStyle: 'bold',
                     color: this.getTextColor()
                 }
