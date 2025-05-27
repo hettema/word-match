@@ -17,7 +17,7 @@ body {
     position: relative;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start; /* Changed from center to align content to the top */
 }
 
 /* Game-specific body styling (for game pages) */
@@ -42,6 +42,7 @@ body.game-page {
     height: 100vh;
     max-width: 600px; /* DIAGNOSTIC: Changed from 800px to match demo */
     max-height: 800px;
+    margin-top: 20px; /* Add top margin to push content down slightly */
     transition: filter 0.3s ease, opacity 0.3s ease; /* DIAGNOSTIC: Added blur transition like demo */
     /* DIAGNOSTIC: Removed flex properties to match demo structure */
 }
@@ -1254,7 +1255,7 @@ body.game-page {
     }
     
     .current-word {
-        bottom: 40px;
+        top: 15px; /* Adjusted for smaller UI on mobile */
         font-size: 14px;
         padding: 4px 8px;
     }
@@ -1262,7 +1263,7 @@ body.game-page {
 /* Current word display - matches demo */
 .current-word {
     position: absolute;
-    bottom: 100px; /* DIAGNOSTIC: Match demo positioning */
+    top: 20px; /* Position it below the top edge to center between score/moves boxes */
     left: 50%;
     transform: translateX(-50%);
     background: rgba(44, 62, 80, 0.9); /* DIAGNOSTIC: Match demo background */
@@ -1275,7 +1276,7 @@ body.game-page {
     letter-spacing: 2px; /* DIAGNOSTIC: Match demo letter spacing */
     opacity: 0;
     transition: opacity 0.2s; /* DIAGNOSTIC: Match demo transition */
-    z-index: 50; /* DIAGNOSTIC: Ensure it's above game elements */
+    z-index: 101; /* Increased to ensure it's above other elements */
 }
 
 .current-word.visible {
