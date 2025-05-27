@@ -214,7 +214,6 @@ class EffectsQueue {
     async processNext() {
         if (this.queue.length === 0) {
             this.isProcessing = false;
-            console.log('DEBUG: EffectsQueue emitting queue-empty - no more effects');
             
             // End cascade sequence when queue is empty
             const scoreSystem = this.scene.registry.get('scoreSystem');
@@ -233,7 +232,6 @@ class EffectsQueue {
         
         try {
             // Emit event for state management (disable input)
-            console.log('DEBUG: EffectsQueue emitting effect-start for', this.currentEffect.type);
             this.events.emit('effect-start', this.currentEffect);
             
             // Process the effect based on type
@@ -388,7 +386,6 @@ class EffectsQueue {
      */
     animateTileDestruction(tile, duration, resolve) {
         if (!tile || !tile.sprite) {
-            console.log('DEBUG: No tile or sprite to animate');
             resolve();
             return;
         }

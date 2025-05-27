@@ -91,10 +91,10 @@ class InputSystem {
      * @param {Phaser.Input.Pointer} pointer - Pointer event
      */
     startTrace(pointer) {
-        
-        
         // Don't start tracing if input is disabled or game is animating
-        if (!this.enabled) return;
+        if (!this.enabled) {
+            return;
+        }
         
         const gameState = this.scene.registry.get('gameState');
         if (gameState && gameState.isAnimating) {
@@ -538,12 +538,78 @@ class InputSystem {
      * Reset input system state
      */
     reset() {
+        // Stop active tracing
         this.isTracing = false;
+        
+        // Clear visual states
         this.clearSelection();
         this.clearTracingLine();
+        this.clearHoverHighlights();
+        
+        // Reset data structures
         this.selectedTiles = [];
         this.currentWord = '';
         this.linePoints = [];
+        
+        // Reset pointer tracking
+        this.lastPointerPosition = { x: 0, y: 0 };
+        this.smoothPointer = { x: 0, y: 0 };
+        
+        // Force all tiles to reset their visual state
+        if (this.grid) {
+            const allTiles = this.grid.getAllTiles();
+            allTiles.forEach(tile => {
+                tile.setSelected(false);
+                tile.setHighlighted(false);
+            });
+        }
+        
+        // Re-register input events to ensure they're properly bound
+        this.reRegisterInputEvents();
+        
+        console.log('🔄 Input system fully reset');
+    }
+    
+    /**
+     * Re-register input events to ensure they're properly bound after focus changes
+     * This is critical for fixing input issues after tab/app switching
+     */
+    reRegisterInputEvents() {
+        if (!this.scene || !this.scene.input) {
+            return;
+        }
+        
+        // First remove existing event listeners to avoid duplicates
+        this.scene.input.off('pointerdown', this.startTrace, this);
+        this.scene.input.off('pointermove', this.updateTrace, this);
+        this.scene.input.off('pointerup', this.endTrace, this);
+        
+        // Re-add the event listeners
+        this.scene.input.on('pointerdown', this.startTrace, this);
+        this.scene.input.on('pointermove', this.updateTrace, this);
+        this.scene.input.on('pointerup', this.endTrace, this);
+        
+        // Make sure input is enabled
+        this.setEnabled(true);
+        
+        // Ensure Phaser's input system is enabled
+        if (this.scene.input) {
+            this.scene.input.enabled = true;
+            
+            if (this.scene.input.manager) {
+                this.scene.input.manager.enabled = true;
+                
+                // Reset all pointers
+                this.scene.input.manager.pointers.forEach(pointer => {
+                    pointer.reset();
+                });
+                
+                // Make sure all input types are enabled
+                if (this.scene.input.mouse) this.scene.input.mouse.enabled = true;
+                if (this.scene.input.touch) this.scene.input.touch.enabled = true;
+                if (this.scene.input.keyboard) this.scene.input.keyboard.enabled = true;
+            }
+        }
     }
     
     /**

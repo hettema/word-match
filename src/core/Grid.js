@@ -26,8 +26,24 @@ class Grid {
         
         // Visual settings
         const settings = scene.registry.get('settings') || {};
-        this.tileSize = settings.display?.tileSize || 64;
-        this.gridPadding = settings.display?.gridPadding || 10;
+        
+        // Make tile size responsive based on screen width
+        const screenWidth = window.innerWidth;
+        if (screenWidth <= 375) {
+            // Very small screens
+            this.tileSize = 44;
+            this.gridPadding = 4;
+        } else if (screenWidth <= 480) {
+            // Small mobile screens
+            this.tileSize = 52;
+            this.gridPadding = 5;
+        } else {
+            // Default size for larger screens
+            this.tileSize = settings.display?.tileSize || 64;
+            this.gridPadding = settings.display?.gridPadding || 6;
+        }
+        
+        console.log(`🔧 RESPONSIVE: Screen width ${screenWidth}px → Tile size ${this.tileSize}px, padding ${this.gridPadding}px`);
         
         // Grid data structure - 2D array of tiles
         this.tiles = [];
@@ -502,6 +518,30 @@ class Grid {
      * Update grid layout when screen size changes
      */
     updateLayout() {
+        // Adjust tile size based on current screen width
+        const screenWidth = window.innerWidth;
+        let newTileSize = this.tileSize;
+        let newPadding = this.gridPadding;
+        
+        if (screenWidth <= 375) {
+            newTileSize = 44;
+            newPadding = 4;
+        } else if (screenWidth <= 480) {
+            newTileSize = 52;
+            newPadding = 5;
+        } else {
+            const settings = this.scene.registry.get('settings') || {};
+            newTileSize = settings.display?.tileSize || 64;
+            newPadding = settings.display?.gridPadding || 6;
+        }
+        
+        // Only recalculate if size changed
+        if (newTileSize !== this.tileSize || newPadding !== this.gridPadding) {
+            console.log(`🔧 LAYOUT UPDATE: New tile size ${newTileSize}px, padding ${newPadding}px`);
+            this.tileSize = newTileSize;
+            this.gridPadding = newPadding;
+        }
+        
         this.calculateGridPosition();
         
         // Update all tile positions

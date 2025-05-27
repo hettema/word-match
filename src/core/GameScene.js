@@ -84,6 +84,12 @@ class GameScene extends Phaser.Scene {
             // Set up event listeners
             this.setupEventListeners();
             
+            // Set up visibility change handlers to fix input issues when switching tabs
+            this.setupVisibilityHandlers();
+            
+            // Add debug button for fixing input issues
+            this.createDebugButton();
+            
             // Create UI elements - commented out, using HTML UI layer instead
             // this.createUI();
             
@@ -204,11 +210,24 @@ class GameScene extends Phaser.Scene {
         canvas.addEventListener('selectstart', (e) => e.preventDefault());
         canvas.addEventListener('dragstart', (e) => e.preventDefault());
         
+        // CRITICAL FIX: Add a direct click handler to the canvas to force input reset
+        // This ensures that when the user clicks on the game after a focus change,
+        // the input system will be completely reset
+        canvas.addEventListener('click', (e) => {
+            console.log('🔍 CANVAS CLICK: Direct canvas click detected - forcing input reset');
+            
+            // Only force reset if we're not already tracing
+            if (this.inputSystem && !this.inputSystem.isCurrentlyTracing()) {
+                // Try the most drastic approach - completely recreate the input system
+                this.recreateInputSystem();
+                console.log('🔍 Input system completely recreated on canvas click');
+            }
+        });
+        
         // Force pointer capture on drag for reliable event handling
         this.input.on('pointerdown', (pointer) => {
             if (pointer.event && pointer.event.pointerId !== undefined) {
                 canvas.setPointerCapture(pointer.event.pointerId);
-                console.log('DEBUG: Captured pointer', pointer.event.pointerId);
             }
         });
         
@@ -216,7 +235,6 @@ class GameScene extends Phaser.Scene {
             if (pointer.event && pointer.event.pointerId !== undefined) {
                 try {
                     canvas.releasePointerCapture(pointer.event.pointerId);
-                    console.log('DEBUG: Released pointer', pointer.event.pointerId);
                 } catch (e) {
                     // Ignore if already released
                 }
@@ -224,12 +242,9 @@ class GameScene extends Phaser.Scene {
         });
         
         // Debug pointer move events
-        let moveCount = 0;
+        // Add event listener for pointer movement
         this.input.on('pointermove', (pointer) => {
-            moveCount++;
-            if (moveCount % 10 === 0) { // Log every 10th move to avoid spam
-                console.log(`DEBUG: Phaser move #${moveCount} Y:${pointer.y.toFixed(1)}`);
-            }
+            // No debug logging needed
         });
     }
     
@@ -1167,16 +1182,13 @@ class GameScene extends Phaser.Scene {
         switch (newState) {
             case 'playing':
                 this.inputSystem.setEnabled(true);
-                console.log('DEBUG: Input enabled - state changed to playing');
                 break;
             case 'animating':
                 this.inputSystem.setEnabled(false);
                 this.grid.clearSelection();
-                console.log('DEBUG: Input disabled - state changed to animating');
                 break;
         }
         
-        console.log(`DEBUG: Game state changed: ${oldState} -> ${newState}`);
     }
     
     /**
@@ -1332,6 +1344,457 @@ class GameScene extends Phaser.Scene {
     }
     
     /**
+     * Set up visibility change handlers to fix input issues when tab switching
+     */
+    setupVisibilityHandlers() {
+        // Create handler functions that we can reference later for cleanup
+        this.visibilityChangeHandler = () => {
+            if (document.visibilityState === 'visible') {
+                // CRITICAL FIX: Make sure the scene is active and resumed
+                if (this.scene.isPaused()) {
+                    this.scene.resume();
+                }
+                
+                // Slightly delay reset to ensure DOM is ready after visibility change
+                setTimeout(() => {
+                    // Always recreate the input system on tab focus as the most reliable fix
+                    this.recreateInputSystem();
+                    
+                    // Check if game is stuck in 'animating' state
+                    if (this.gameState === 'animating') {
+                        console.log('🔍 ROOT CAUSE: Game stuck in "animating" state - forcing to "playing" state');
+                        
+                        // Force game state to 'playing' which will enable input
+                        this.setGameState('playing');
+                        
+                        // Reset EffectsQueue if it's stuck
+                        if (this.effectsQueue) {
+                            console.log('🔍 Resetting EffectsQueue state');
+                            this.effectsQueue.isProcessing = false;
+                            this.effectsQueue.currentEffect = null;
+                            this.effectsQueue.clearQueue();
+                            
+                            // Manually emit queue-empty event to ensure proper state transition
+                            this.effectsQueue.events.emit('queue-empty');
+                        }
+                    }
+                    
+                    // Still run the regular reset after recreation
+                    this.resetPhaser();
+                    
+                    // Force a second reset after a short delay to catch edge cases
+                    setTimeout(() => {
+                        this.resetPhaser(true);
+                    }, 300);
+                }, 100);
+            } else {
+                console.log('🔍 TAB BLUR: Page hidden - pausing scene');
+                // Pause the scene when the tab is not visible
+                this.scene.pause();
+                
+                // If we have an active tracing, force end it to avoid stuck states
+                if (this.inputSystem && this.inputSystem.isCurrentlyTracing()) {
+                    this.inputSystem.endTrace();
+                }
+            }
+        };
+        
+        // Handle window blur/focus events as backup
+        this.windowBlurHandler = () => {
+            console.log('🔍 WINDOW BLUR: Window lost focus');
+            this.scene.pause();
+            
+            // If we have an active tracing, force end it to avoid stuck states
+            if (this.inputSystem && this.inputSystem.isCurrentlyTracing()) {
+                this.inputSystem.endTrace();
+            }
+        };
+        
+        this.windowFocusHandler = () => {
+            // CRITICAL FIX: Make sure the scene is active and resumed
+            if (this.scene.isPaused()) {
+                this.scene.resume();
+            }
+            
+            // Slightly delay reset to ensure DOM is ready
+            setTimeout(() => {
+                // Always recreate the input system on window focus as the most reliable fix
+                this.recreateInputSystem();
+                
+                // Check if game is stuck in 'animating' state
+                if (this.gameState === 'animating') {
+                    console.log('🔍 ROOT CAUSE: Game stuck in "animating" state - forcing to "playing" state');
+                    
+                    // Force game state to 'playing' which will enable input
+                    this.setGameState('playing');
+                    
+                    // Reset EffectsQueue if it's stuck
+                    if (this.effectsQueue) {
+                        console.log('🔍 Resetting EffectsQueue state');
+                        this.effectsQueue.isProcessing = false;
+                        this.effectsQueue.currentEffect = null;
+                        this.effectsQueue.clearQueue();
+                        
+                        // Manually emit queue-empty event to ensure proper state transition
+                        this.effectsQueue.events.emit('queue-empty');
+                    }
+                }
+                
+                // Still run the regular reset after recreation
+                this.resetPhaser();
+                
+                // Force a second reset after a short delay to catch edge cases
+                setTimeout(() => {
+                    this.resetPhaser(true);
+                }, 300);
+            }, 100);
+        };
+        
+        // Add the event listeners
+        document.addEventListener('visibilitychange', this.visibilityChangeHandler);
+        window.addEventListener('blur', this.windowBlurHandler);
+        window.addEventListener('focus', this.windowFocusHandler);
+        
+        // Create a function to attempt resetting input periodically
+        this.resetInputInterval = setInterval(() => {
+            if (document.visibilityState === 'visible' &&
+                this.game &&
+                this.game.isRunning &&
+                this.scene.isActive()) {
+                this.resetPhaser(true); // quiet mode for interval checks
+            }
+        }, 5000); // Check every 5 seconds
+        
+        // Add game-specific event listener to handle resuming
+        this.gameResumeHandler = () => {
+            // CRITICAL FIX: Make sure the scene is active and resumed
+            if (this.scene.isPaused()) {
+                this.scene.resume();
+            }
+            
+            // Always recreate the input system on game resume as the most reliable fix
+            this.recreateInputSystem();
+            
+            // Check if game is stuck in 'animating' state
+            if (this.gameState === 'animating') {
+                console.log('🔍 ROOT CAUSE: Game stuck in "animating" state - forcing to "playing" state');
+                
+                // Force game state to 'playing' which will enable input
+                this.setGameState('playing');
+                
+                // Reset EffectsQueue if it's stuck
+                if (this.effectsQueue) {
+                    console.log('🔍 Resetting EffectsQueue state');
+                    this.effectsQueue.isProcessing = false;
+                    this.effectsQueue.currentEffect = null;
+                    this.effectsQueue.clearQueue();
+                    
+                    // Manually emit queue-empty event to ensure proper state transition
+                    this.effectsQueue.events.emit('queue-empty');
+                }
+            }
+            
+            // Still run the regular reset after recreation
+            this.resetPhaser();
+        };
+        this.game.events.on('resume', this.gameResumeHandler);
+        
+        console.log('Visibility change handlers set up');
+    }
+    
+    /**
+     * Reset all Phaser input systems
+     * @param {boolean} quiet - If true, suppress console logs
+     */
+    resetPhaser(quiet = false) {
+        try {
+            // Check if game is stuck in 'animating' state
+            if (this.gameState === 'animating') {
+                // Force game state to 'playing' which will enable input
+                this.setGameState('playing');
+                
+                // Reset EffectsQueue if it's stuck
+                if (this.effectsQueue) {
+                    this.effectsQueue.isProcessing = false;
+                    this.effectsQueue.currentEffect = null;
+                    this.effectsQueue.clearQueue();
+                    
+                    // Manually emit queue-empty event to ensure proper state transition
+                    this.effectsQueue.events.emit('queue-empty');
+                }
+            }
+            
+            // Resume the scene if it was paused
+            if (this.scene.isPaused()) {
+                this.scene.resume();
+            }
+            
+            // Reset our custom input system
+            if (this.inputSystem) {
+                this.inputSystem.reset();
+                this.inputSystem.setEnabled(true);
+                
+                // Explicitly call reRegisterInputEvents to fix focus issues
+                this.inputSystem.reRegisterInputEvents();
+            }
+            
+            // Reset Phaser's internal input system
+            if (this.input && this.input.manager) {
+                // Re-enable the entire input manager
+                this.input.enabled = true;
+                this.input.manager.enabled = true;
+                
+                // Enable mouse and touch input if they exist
+                if (this.input.mouse) this.input.mouse.enabled = true;
+                if (this.input.touch) this.input.touch.enabled = true;
+                if (this.input.keyboard) this.input.keyboard.enabled = true;
+                
+                // Reset the active pointer
+                if (this.input.activePointer) {
+                    this.input.activePointer.reset();
+                }
+                
+                // Reset all pointers in the manager
+                this.input.manager.pointers.forEach(pointer => {
+                    pointer.reset();
+                });
+                
+                // Reset all interactive objects in the scene - Very important for focus issues
+                this.children.list.forEach(child => {
+                    if (child.input) {
+                        child.input.enabled = true;
+                    }
+                });
+            }
+            
+            // Reset any disabled input components on tiles
+            if (this.grid) {
+                this.grid.getAllTiles().forEach(tile => {
+                    if (tile.input) {
+                        tile.input.enabled = true;
+                    }
+                });
+            }
+            
+            // Set game state to playing if needed
+            if (this.gameState !== 'playing' && !this.scene.isPaused()) {
+                this.setGameState('playing');
+            }
+        } catch (error) {
+            console.error('Error during Phaser reset:', error);
+        }
+    }
+    
+    /**
+     * Force input system reset - utility function that can be called
+     * from the console for debugging or triggered by game events
+     * Implements a comprehensive reset of all input-related systems
+     */
+    /**
+     * Completely recreate the input system from scratch
+     * This is a last resort for fixing input issues after focus changes
+     */
+    recreateInputSystem() {
+        try {
+            // First destroy the existing input system if it exists
+            if (this.inputSystem) {
+                this.inputSystem.destroy();
+                this.inputSystem = null;
+            }
+            
+            // Reset Phaser's internal input system first
+            if (this.input && this.input.manager) {
+                // Re-enable the entire input manager
+                this.input.enabled = true;
+                this.input.manager.enabled = true;
+                
+                // Reset all pointers
+                this.input.manager.pointers.forEach(pointer => {
+                    pointer.reset();
+                });
+                
+                // Make sure all input types are enabled
+                if (this.input.mouse) this.input.mouse.enabled = true;
+                if (this.input.touch) this.input.touch.enabled = true;
+                if (this.input.keyboard) this.input.keyboard.enabled = true;
+            }
+            
+            // Create a new input system
+            this.inputSystem = new InputSystem(this, this.grid);
+            this.registry.set('inputSystem', this.inputSystem);
+            
+            // Force re-registration of input events
+            this.inputSystem.reRegisterInputEvents();
+        } catch (error) {
+            console.error('Error recreating input system:', error);
+        }
+    }
+    
+    forceInputReset() {
+        console.log('🛠️ FORCE INPUT RESET: Performing emergency input system reset');
+        
+        try {
+            // First ensure the scene is active and resumed
+            if (this.scene.isPaused()) {
+                this.scene.resume();
+            }
+            
+            // Reset our custom input system completely
+            if (this.inputSystem) {
+                // End any active trace
+                if (this.inputSystem.isCurrentlyTracing()) {
+                    this.inputSystem.endTrace();
+                }
+                
+                // Full reset of the input system state
+                this.inputSystem.reset();
+                this.inputSystem.setEnabled(true);
+            }
+            
+            // Thorough reset of Phaser's input system
+            if (this.input) {
+                // Re-enable all input components
+                this.input.enabled = true;
+                
+                if (this.input.manager) {
+                    this.input.manager.enabled = true;
+                    
+                    // Clear any active pointers
+                    this.input.manager.pointers.forEach(pointer => {
+                        pointer.reset();
+                        pointer.active = false;
+                        pointer.dirty = false;
+                    });
+                }
+                
+                // Reset all input types
+                if (this.input.mouse) {
+                    this.input.mouse.enabled = true;
+                    if (this.input.mouse.locked) {
+                        this.input.mouse.releasePointerLock();
+                    }
+                }
+                if (this.input.touch) this.input.touch.enabled = true;
+                if (this.input.keyboard) this.input.keyboard.enabled = true;
+                
+                // Reset active pointer
+                if (this.input.activePointer) {
+                    this.input.activePointer.reset();
+                    this.input.activePointer.updateWorldPoint(this.cameras.main);
+                }
+            }
+            
+            // Reset all interactive objects in the scene
+            this.children.list.forEach(child => {
+                if (child.input) {
+                    child.input.enabled = true;
+                    child.input.dragState = 0;
+                    child.input.cursor = null;
+                }
+            });
+            
+            // Reset all tile inputs
+            if (this.grid) {
+                this.grid.getAllTiles().forEach(tile => {
+                    if (tile.input) {
+                        tile.input.enabled = true;
+                    }
+                    tile.setSelected(false);
+                    tile.setHighlighted(false);
+                });
+            }
+            
+            console.log('🛠️ FORCE INPUT RESET: Complete');
+        } catch (error) {
+            console.error('Error during force input reset:', error);
+        }
+        
+        return 'Input system reset complete'; // For console usage feedback
+    }
+    
+    /**
+     * Create a debug button to fix input issues
+     * This adds a button to the bottom-right corner that users can click
+     * to force a complete input system reset if they encounter issues
+     */
+    createDebugButton() {
+        // Create a button element
+        const button = document.createElement('button');
+        button.textContent = 'Fix Input';
+        button.style.position = 'fixed';
+        button.style.bottom = '10px';
+        button.style.right = '10px';
+        button.style.zIndex = '1000';
+        button.style.padding = '8px 12px';
+        button.style.backgroundColor = '#e74c3c';
+        button.style.color = 'white';
+        button.style.border = 'none';
+        button.style.borderRadius = '4px';
+        button.style.fontWeight = 'bold';
+        button.style.cursor = 'pointer';
+        button.style.display = 'none'; // Hidden by default
+        
+        // Add click handler
+        button.addEventListener('click', () => {
+            console.log('🔧 DEBUG BUTTON: User clicked fix input button');
+            this.recreateInputSystem();
+            this.resetPhaser();
+            
+            // Force game state to playing
+            if (this.gameState !== 'playing') {
+                this.setGameState('playing');
+            }
+            
+            // Flash the button to indicate it worked
+            button.textContent = 'Fixed!';
+            setTimeout(() => {
+                button.textContent = 'Fix Input';
+            }, 1000);
+        });
+        
+        // Add to document
+        document.body.appendChild(button);
+        this.debugButton = button;
+        
+        // Show the button when focus changes
+        window.addEventListener('focus', () => {
+            button.style.display = 'block';
+            
+            // Auto-hide after 10 seconds
+            setTimeout(() => {
+                button.style.display = 'none';
+            }, 10000);
+        });
+        
+        // Also add keyboard shortcut (Ctrl+Shift+R)
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.shiftKey && e.key === 'R') {
+                console.log('🔧 DEBUG SHORTCUT: User pressed Ctrl+Shift+R');
+                this.recreateInputSystem();
+                this.resetPhaser();
+                
+                // Force game state to playing
+                if (this.gameState !== 'playing') {
+                    this.setGameState('playing');
+                }
+                
+                // Show feedback
+                if (this.debugButton) {
+                    this.debugButton.style.display = 'block';
+                    this.debugButton.textContent = 'Fixed!';
+                    setTimeout(() => {
+                        this.debugButton.textContent = 'Fix Input';
+                        this.debugButton.style.display = 'none';
+                    }, 2000);
+                }
+                
+                // Prevent browser refresh
+                e.preventDefault();
+            }
+        });
+    }
+    
+    /**
      * Clean up scene resources
      */
     destroy() {
@@ -1348,6 +1811,29 @@ class GameScene extends Phaser.Scene {
         if (this.scoreSystem) {
             this.scoreSystem.destroy();
         }
+        
+        // Clean up visibility change handlers
+        document.removeEventListener('visibilitychange', this.visibilityChangeHandler);
+        window.removeEventListener('blur', this.windowBlurHandler);
+        window.removeEventListener('focus', this.windowFocusHandler);
+        
+        // Remove game event handlers
+        if (this.game && this.game.events) {
+            this.game.events.off('resume', this.gameResumeHandler);
+        }
+        
+        // Clear reset interval
+        if (this.resetInputInterval) {
+            clearInterval(this.resetInputInterval);
+            this.resetInputInterval = null;
+        }
+        
+        // Remove debug button if it exists
+        if (this.debugButton && this.debugButton.parentNode) {
+            this.debugButton.parentNode.removeChild(this.debugButton);
+            this.debugButton = null;
+        }
+        
         if (this.gameStateManager) {
             // GameState doesn't need explicit destroy, but save progress
             this.gameStateManager.saveProgress();

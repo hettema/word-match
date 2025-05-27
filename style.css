@@ -13,7 +13,7 @@ body {
     min-height: 100vh;
     margin: 0;
     padding: 0;
-    overflow: hidden; /* DIAGNOSTIC: Changed from overflow-x to match demo */
+    overflow-x: hidden; /* Allow vertical scrolling if needed, but prevent horizontal */
     position: relative;
     display: flex;
     justify-content: center;
@@ -344,15 +344,15 @@ body.game-page {
 /* Extra small screens (phones) */
 @media (max-width: 479px) {
     #game-container {
-        max-width: 500px;
-        max-height: 500px;
+        max-width: 100%;
+        max-height: 100vh;
         padding: 4px; /* Reduced from 15px */
         border-radius: 0;
     }
     
     .ui-layer {
         height: 80px;
-        margin-bottom: 20px;
+        margin-bottom: 15px;
     }
     
     .score-value,
@@ -370,8 +370,9 @@ body.game-page {
     }
     
     .game-board-area {
-        margin-bottom: 20px;
-        min-height: 250px;
+        margin-bottom: 15px;
+        width: 100%;
+        height: calc(100vh - 120px);
     }
     
     .game-button {
@@ -383,14 +384,17 @@ body.game-page {
 /* Minimum width support (375px as specified) */
 @media (max-width: 375px) {
     #game-container {
-        max-width: 400px;
-        max-height: 400px;
-        padding: 3px; /* Reduced from 10px */
+        max-width: 100%;
+        max-height: 100vh;
+        padding: 2px;
     }
     
     .ui-layer {
-        height: 70px;
-        margin-bottom: 15px;
+        height: 65px;
+        margin-bottom: 10px;
+        top: 10px;
+        left: 10px;
+        right: 10px;
     }
     
     .score-value,
@@ -407,8 +411,8 @@ body.game-page {
     }
     
     .game-board-area {
-        margin-bottom: 15px;
-        min-height: 200px;
+        margin-bottom: 10px;
+        height: calc(100vh - 100px);
     }
 }
 
@@ -1271,4 +1275,31 @@ body.game-page {
 
 .current-word.visible {
     opacity: 1;
+}
+
+/* Emergency reset button */
+.emergency-reset {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.reset-button {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 15px;
+    font-family: 'Rubik', Arial, sans-serif;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+}
+
+.reset-button:hover {
+    background-color: #c0392b;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }

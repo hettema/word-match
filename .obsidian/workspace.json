@@ -177,6 +177,8 @@
   },
   "active": "dba328133ee3b571",
   "lastOpenFiles": [
+    "src/core/GameScene.js.backup",
+    "tests/test-responsive.html",
     "_redirects",
     "netlify.toml",
     "README.md",
@@ -197,8 +199,6 @@
     "word-match-practical-style-guide.md",
     "tests/test-advanced-scoring.html",
     "word-match-style-implementation.md",
-    "phaser-style-implementation.md",
-    "tests/index.html",
-    "tests/test-styles.css"
+    "phaser-style-implementation.md"
   ]
 }

@@ -62,6 +62,11 @@
         <!-- Current word display -->
         <div class="current-word" id="currentWord"></div>
         
+        <!-- Emergency reset button (hidden by default) -->
+        <div id="emergency-reset" class="emergency-reset" style="display: none;">
+            <button id="reset-button" class="reset-button">Fix Game State</button>
+        </div>
+        
         <!-- Loading Screen -->
         <div id="loading-screen" class="loading-screen">
             <div class="loading-content">
@@ -409,8 +414,8 @@
             backgroundColor: 0x34495e, // Match demo's dark blue background
             parent: 'game-board-area',
             scale: {
-                mode: Phaser.Scale.NONE, // Don't scale, use exact size
-                autoCenter: Phaser.Scale.NO_CENTER, // Remove auto-centering to eliminate margins
+                mode: Phaser.Scale.FIT, // Change to FIT mode to scale properly on mobile
+                autoCenter: Phaser.Scale.CENTER_BOTH, // Center the game canvas
                 width: 450,
                 height: 500
             },
@@ -425,6 +430,17 @@
                     debug: false
                 }
             },
+            // Input configuration
+            input: {
+                mouse: true,
+                touch: true,
+                keyboard: true,
+                gamepad: false
+            },
+            // Focus handling - manually handle focus/blur
+            disableContextMenu: true,
+            // Set to false so we can handle it manually in our visibility handlers
+            pauseOnBlur: false,
             scene: GameScene
         };
         
@@ -454,11 +470,77 @@
                 // Initialize Phaser game
                 game = new Phaser.Game(gameConfig);
                 
+                // Make game instance globally available for emergency reinitialization
+                window.game = game;
+                
                 // Handle game ready
                 game.events.once('ready', () => {
                     console.log('Game initialized successfully');
                     hideLoadingScreen();
                 });
+                
+                // Add emergency game reinitialization function to window
+                window.reinitializeGame = function() {
+                    try {
+                        if (game) {
+                            // Check if scene is paused and resume it
+                            if (game.scene.isPaused('GameScene')) {
+                                game.scene.resume('GameScene');
+                            }
+                            
+                            // Get the game scene - works whether it was active or just resumed
+                            const gameScene = game.scene.getScene('GameScene');
+                            
+                            if (!gameScene) {
+                                game.scene.start('GameScene');
+                                return "Game scene restarted. Please try again.";
+                            }
+                            
+                            // ROOT CAUSE FIX: Check if game is stuck in 'animating' state
+                            if (gameScene.gameState === 'animating') {
+                                // Force game state to 'playing' which will enable input
+                                gameScene.setGameState('playing');
+                                
+                                // Reset EffectsQueue if it's stuck
+                                if (gameScene.effectsQueue) {
+                                    gameScene.effectsQueue.isProcessing = false;
+                                    gameScene.effectsQueue.currentEffect = null;
+                                    gameScene.effectsQueue.clearQueue();
+                                    
+                                    // Manually emit queue-empty event to ensure proper state transition
+                                    gameScene.effectsQueue.events.emit('queue-empty');
+                                }
+                            }
+                            
+                            // Reset our custom input system
+                            if (gameScene.inputSystem) {
+                                gameScene.inputSystem.reset();
+                                gameScene.inputSystem.setEnabled(true);
+                                gameScene.inputSystem.reRegisterInputEvents();
+                            }
+                            
+                            // Reset Phaser's input system
+                            if (gameScene.input) {
+                                gameScene.input.enabled = true;
+                                
+                                if (gameScene.input.manager) {
+                                    gameScene.input.manager.enabled = true;
+                                    
+                                    // Reset all pointers
+                                    gameScene.input.manager.pointers.forEach(pointer => {
+                                        pointer.reset();
+                                    });
+                                }
+                            }
+                            return "Game state and input system fixed. You should be able to play again without losing your progress.";
+                        } else {
+                            return "Game scene not active, cannot fix game state.";
+                        }
+                    } catch (error) {
+                        console.error('Error during game state fix:', error);
+                        return "Error during game state fix: " + error.message;
+                    }
+                };
                 
                 // Handle game errors
                 game.events.on('error', (error) => {
@@ -471,10 +553,64 @@
                     location.reload();
                 });
                 
+                // Set up emergency reset button
+                setupEmergencyResetButton();
+                
             } catch (error) {
                 console.error('Failed to initialize game:', error);
                 showErrorScreen('Failed to start game: ' + error.message);
             }
+        }
+        
+        // Set up emergency reset button functionality
+        function setupEmergencyResetButton() {
+            const resetButton = document.getElementById('reset-button');
+            const resetContainer = document.getElementById('emergency-reset');
+            
+            if (resetButton && resetContainer) {
+                // Show reset button when focus returns to the page
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'visible') {
+                        // Show the reset button after a short delay
+                        setTimeout(() => {
+                            resetContainer.style.display = 'block';
+                        }, 500);
+                    }
+                });
+                
+                // Also show on window focus
+                window.addEventListener('focus', () => {
+                    // Show the reset button after a short delay
+                    setTimeout(() => {
+                        resetContainer.style.display = 'block';
+                    }, 500);
+                });
+                
+                // Set up click handler
+                resetButton.addEventListener('click', () => {
+                    // Call the reinitializeGame function
+                    window.reinitializeGame();
+                    
+                    // Hide the reset button
+                    resetContainer.style.display = 'none';
+                });
+            }
+            
+            // Add keyboard shortcut (Ctrl+Shift+R) for emergency reset
+            document.addEventListener('keydown', (e) => {
+                // Check for Ctrl+Shift+R
+                if (e.ctrlKey && e.shiftKey && e.key === 'R') {
+                    e.preventDefault(); // Prevent browser refresh
+                    
+                    // Call the reinitializeGame function
+                    window.reinitializeGame();
+                    
+                    // Hide the reset button if it's visible
+                    if (resetContainer) {
+                        resetContainer.style.display = 'none';
+                    }
+                }
+            });
         }
         
         function showLoadingScreen() {
@@ -518,11 +654,25 @@
         
         // Handle page visibility changes (pause/resume)
         document.addEventListener('visibilitychange', () => {
-            if (game && game.scene.isActive('GameScene')) {
+            if (game) {
                 if (document.hidden) {
-                    game.scene.pause('GameScene');
+                    // Pause the game scene if it's active
+                    if (game.scene.isActive('GameScene')) {
+                        game.scene.pause('GameScene');
+                    }
                 } else {
-                    game.scene.resume('GameScene');
+                    // Resume the game scene if it's paused
+                    if (game.scene.isPaused('GameScene')) {
+                        game.scene.resume('GameScene');
+                        
+                        // Force a reset of the input system after resuming
+                        setTimeout(() => {
+                            const gameScene = game.scene.getScene('GameScene');
+                            if (gameScene && typeof gameScene.recreateInputSystem === 'function') {
+                                gameScene.recreateInputSystem();
+                            }
+                        }, 100);
+                    }
                 }
             }
         });
