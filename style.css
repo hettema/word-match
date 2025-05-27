@@ -32,7 +32,7 @@ body.game-page {
     height: 100%;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start; /* Changed from center to align to top */
 }
 
 /* Game container - matches demo sizing */
@@ -43,8 +43,19 @@ body.game-page {
     max-width: 600px; /* DIAGNOSTIC: Changed from 800px to match demo */
     max-height: 800px;
     margin-top: 20px; /* Add top margin to push content down slightly */
+    margin-left: auto; /* Center horizontally */
+    margin-right: auto; /* Center horizontally */
+    padding: 0; /* Remove padding */
     transition: filter 0.3s ease, opacity 0.3s ease; /* DIAGNOSTIC: Added blur transition like demo */
     /* DIAGNOSTIC: Removed flex properties to match demo structure */
+}
+
+/* Specific mobile adjustments for game container */
+@media (max-width: 480px) {
+    #game-container {
+        margin-top: 10px; /* Less margin on mobile */
+        max-width: 100%; /* Use full width on mobile */
+    }
 }
 
 #game-container.blurred {
@@ -56,6 +67,7 @@ body.game-page {
 #game-container canvas {
     display: block;
     border-radius: 8px;
+    margin: 0 auto; /* Center horizontally */
     /* Remove the !important overrides to let Phaser control size */
 }
 
@@ -141,6 +153,12 @@ body.game-page {
     position: relative;
     width: 100%;
     height: 100%;
+    display: flex;
+    justify-content: center; /* Center horizontally */
+    align-items: flex-start; /* Align to top */
+    padding: 0; /* Remove padding */
+    margin: 0; /* Remove margin */
+    max-width: 100%; /* Ensure it doesn't exceed viewport */
 }
 
 .game-board-area {
@@ -347,13 +365,13 @@ body.game-page {
     #game-container {
         max-width: 100%;
         max-height: 100vh;
-        padding: 4px; /* Reduced from 15px */
+        padding: 0; /* Remove padding completely */
         border-radius: 0;
     }
     
     .ui-layer {
         height: 80px;
-        margin-bottom: 15px;
+        margin-bottom: 10px; /* Reduced margin */
     }
     
     .score-value,
@@ -371,11 +389,19 @@ body.game-page {
     }
     
     .game-board-area {
-        margin-bottom: 15px;
+        margin-bottom: 10px;
         margin-top: 5px;
         width: 100%;
         min-height: auto;
         height: auto;
+        padding: 0; /* Remove padding */
+    }
+    
+    /* Ensure canvas uses full width on mobile */
+    #game-container canvas {
+        width: 95% !important; /* Force wider canvas */
+        max-width: 95vw !important; /* Limit to viewport width */
+        border-radius: 4px; /* Smaller border radius */
     }
     
     .game-button {
@@ -389,15 +415,15 @@ body.game-page {
     #game-container {
         max-width: 100%;
         max-height: 100vh;
-        padding: 2px;
+        padding: 0; /* Remove padding completely */
     }
     
     .ui-layer {
         height: 65px;
-        margin-bottom: 10px;
-        top: 10px;
-        left: 10px;
-        right: 10px;
+        margin-bottom: 5px; /* Reduced margin */
+        top: 5px; /* Reduced top spacing */
+        left: 5px;
+        right: 5px;
     }
     
     .score-value,
@@ -414,10 +440,17 @@ body.game-page {
     }
     
     .game-board-area {
-        margin-bottom: 10px;
-        margin-top: 5px;
+        margin-bottom: 5px;
+        margin-top: 2px;
         min-height: auto;
         height: auto;
+        padding: 0; /* Remove padding */
+    }
+    
+    /* Ensure canvas uses full width on smallest screens */
+    #game-container canvas {
+        width: 98% !important; /* Force wider canvas */
+        max-width: 98vw !important; /* Limit to viewport width */
     }
 }
 
@@ -899,6 +932,10 @@ body.game-page {
     height: auto; /* Let height be determined by content */
     margin-bottom: 20px;
     margin-top: 10px; /* Add a small top margin */
+    margin-left: auto; /* Center horizontally */
+    margin-right: auto; /* Center horizontally */
+    width: 100%; /* Ensure full width */
+    max-width: 100%; /* Prevent overflow */
     overflow: visible; /* Allow content to be visible */
 }
 

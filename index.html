@@ -417,7 +417,12 @@
                 mode: Phaser.Scale.FIT, // Change to FIT mode to scale properly on mobile
                 autoCenter: Phaser.Scale.CENTER_HORIZONTALLY, // Only center horizontally, not vertically
                 width: 450,
-                height: 500
+                height: 500,
+                expandParent: true, // Ensure parent expands to fit game
+                max: {
+                    width: 600, // Maximum width
+                    height: 800 // Maximum height
+                }
             },
             render: {
                 antialias: true,
