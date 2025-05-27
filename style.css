@@ -399,9 +399,14 @@ body.game-page {
     
     /* Ensure canvas uses full width on mobile */
     #game-container canvas {
-        width: 95% !important; /* Force wider canvas */
-        max-width: 95vw !important; /* Limit to viewport width */
+        width: 99% !important; /* Force wider canvas - increased from 95% */
+        max-width: calc(100vw - 10px) !important; /* Only 5px padding on each side */
         border-radius: 4px; /* Smaller border radius */
+    }
+    
+    /* Target the dark container around the game board */
+    .game-board-area > div {
+        padding: 5px !important; /* Reduce padding to 5px */
     }
     
     .game-button {
@@ -449,8 +454,13 @@ body.game-page {
     
     /* Ensure canvas uses full width on smallest screens */
     #game-container canvas {
-        width: 98% !important; /* Force wider canvas */
-        max-width: 98vw !important; /* Limit to viewport width */
+        width: 99.5% !important; /* Force wider canvas */
+        max-width: calc(100vw - 6px) !important; /* Only 3px padding on each side */
+    }
+    
+    /* Target the dark container around the game board */
+    .game-board-area > div {
+        padding: 3px !important; /* Even smaller padding for smallest screens */
     }
 }
 

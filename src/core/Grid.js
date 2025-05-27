@@ -31,12 +31,12 @@ class Grid {
         const screenWidth = window.innerWidth;
         if (screenWidth <= 375) {
             // Very small screens
-            this.tileSize = 44;
-            this.gridPadding = 4;
+            this.tileSize = 42; // Slightly smaller tiles
+            this.gridPadding = 8; // Increased padding for better spacing
         } else if (screenWidth <= 480) {
-            // Small mobile screens
-            this.tileSize = 52;
-            this.gridPadding = 5;
+            // Small mobile screens (like iPhone 15)
+            this.tileSize = 48; // Slightly smaller tiles
+            this.gridPadding = 8; // Increased padding for better spacing
         } else {
             // Default size for larger screens
             this.tileSize = settings.display?.tileSize || 64;
