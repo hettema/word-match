@@ -183,21 +183,31 @@ class EffectsQueue {
         
         const currentTime = Date.now();
         const cascadeDuration = currentTime - this.cascadeStartTime;
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         
-        // Check depth limit
-        if (this.cascadeDepth >= this.maxCascadeDepth) {
-            console.warn(`EFFECTS-03: Cascade depth limit reached (${this.maxCascadeDepth})`);
+        // Log cascade status for debugging
+        console.log(`🔄 CASCADE STATUS: depth=${this.cascadeDepth}, duration=${cascadeDuration}ms, isMobile=${isMobile}`);
+        
+        // Check depth limit - be more lenient on mobile
+        const mobileDepthLimit = 15; // Higher limit for mobile
+        const effectiveDepthLimit = isMobile ? mobileDepthLimit : this.maxCascadeDepth;
+        
+        if (this.cascadeDepth >= effectiveDepthLimit) {
+            console.warn(`EFFECTS-03: Cascade depth limit reached (${effectiveDepthLimit})`);
             return false;
         }
         
-        // Check time limit
-        if (cascadeDuration >= this.maxCascadeDuration) {
-            console.warn(`EFFECTS-03: Cascade time limit reached (${this.maxCascadeDuration}ms)`);
+        // Check time limit - be more lenient on mobile
+        const mobileTimeLimit = 60000; // 60 seconds for mobile
+        const effectiveTimeLimit = isMobile ? mobileTimeLimit : this.maxCascadeDuration;
+        
+        if (cascadeDuration >= effectiveTimeLimit) {
+            console.warn(`EFFECTS-03: Cascade time limit reached (${effectiveTimeLimit}ms)`);
             return false;
         }
         
-        // Check performance
-        if (this.adaptivePerformance && this.scene.game.loop.actualFps < this.frameDropThreshold) {
+        // Check performance - disable on mobile to ensure cascades work
+        if (!isMobile && this.adaptivePerformance && this.scene.game.loop.actualFps < this.frameDropThreshold) {
             console.warn(`EFFECTS-03: Performance degradation detected, reducing effects`);
             this.visualEffectIntensity *= 0.8;
             if (this.visualEffectIntensity < 0.3) {

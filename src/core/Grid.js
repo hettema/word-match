@@ -29,21 +29,17 @@ class Grid {
         
         // Make tile size responsive based on screen width
         const screenWidth = window.innerWidth;
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         
         // Add debug logging to help diagnose the issue
-        console.log(`📱 DEVICE DEBUG - Screen width: ${screenWidth}px, User Agent: ${navigator.userAgent}`);
+        console.log(`📱 DEVICE DEBUG - Screen width: ${screenWidth}px, User Agent: ${navigator.userAgent}, isMobile: ${isMobile}`);
         
-        // Force mobile layout for all devices under 800px to ensure proper spacing
-        if (screenWidth <= 375) {
-            // Very small screens
-            this.tileSize = 38; // Much smaller tiles
-            this.gridPadding = 12; // Much larger padding
-            console.log(`📱 USING VERY SMALL SCREEN LAYOUT: tileSize=${this.tileSize}, gridPadding=${this.gridPadding}`);
-        } else if (screenWidth <= 480) {
-            // Small mobile screens (like iPhone 15)
-            this.tileSize = 40; // Much smaller tiles
-            this.gridPadding = 12; // Much larger padding
-            console.log(`📱 USING SMALL MOBILE LAYOUT: tileSize=${this.tileSize}, gridPadding=${this.gridPadding}`);
+        // FORCE MOBILE LAYOUT: Always use mobile layout on mobile devices regardless of screen width
+        if (isMobile || screenWidth <= 480) {
+            // Mobile devices (including iPhone 15)
+            this.tileSize = 36; // Even smaller tiles
+            this.gridPadding = 15; // Even larger padding
+            console.log(`📱 FORCING MOBILE LAYOUT: tileSize=${this.tileSize}, gridPadding=${this.gridPadding}`);
         } else if (screenWidth <= 800) {
             // Medium screens (tablets, etc.)
             this.tileSize = 48;
@@ -55,6 +51,14 @@ class Grid {
             this.gridPadding = settings.display?.gridPadding || 6;
             console.log(`🖥️ USING DESKTOP LAYOUT: tileSize=${this.tileSize}, gridPadding=${this.gridPadding}`);
         }
+        
+        // Force layout update during initialization
+        setTimeout(() => {
+            if (this.updateLayout) {
+                console.log('📱 Forcing layout update during initialization');
+                this.updateLayout();
+            }
+        }, 100);
         
         console.log(`🔧 RESPONSIVE: Screen width ${screenWidth}px → Tile size ${this.tileSize}px, padding ${this.gridPadding}px`);
         
@@ -570,20 +574,16 @@ class Grid {
     updateLayout() {
         // Adjust tile size based on current screen width
         const screenWidth = window.innerWidth;
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         let newTileSize = this.tileSize;
         let newPadding = this.gridPadding;
         
-        // Use the same values as in the constructor for consistency
-        if (screenWidth <= 375) {
-            // Very small screens
-            newTileSize = 38; // Much smaller tiles
-            newPadding = 12; // Much larger padding
-            console.log(`📱 LAYOUT UPDATE: Using very small screen layout`);
-        } else if (screenWidth <= 480) {
-            // Small mobile screens (like iPhone 15)
-            newTileSize = 40; // Much smaller tiles
-            newPadding = 12; // Much larger padding
-            console.log(`📱 LAYOUT UPDATE: Using small mobile layout`);
+        // FORCE MOBILE LAYOUT: Always use mobile layout on mobile devices regardless of screen width
+        if (isMobile || screenWidth <= 480) {
+            // Mobile devices (including iPhone 15)
+            newTileSize = 36; // Even smaller tiles
+            newPadding = 15; // Even larger padding
+            console.log(`📱 LAYOUT UPDATE: FORCING MOBILE LAYOUT: tileSize=${newTileSize}, gridPadding=${newPadding}`);
         } else if (screenWidth <= 800) {
             // Medium screens (tablets, etc.)
             newTileSize = 48;

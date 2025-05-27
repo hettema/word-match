@@ -362,16 +362,25 @@ body.game-page {
 
 /* Extra small screens (phones) */
 @media (max-width: 479px) {
+    /* Force body to align content to top */
+    body {
+        align-items: flex-start !important;
+        padding-top: 0 !important;
+    }
+    
     #game-container {
         max-width: 100%;
         max-height: 100vh;
         padding: 0; /* Remove padding completely */
         border-radius: 0;
+        margin-top: 0 !important; /* Remove top margin */
     }
     
     .ui-layer {
         height: 80px;
-        margin-bottom: 10px; /* Reduced margin */
+        margin-bottom: 5px; /* Further reduced margin */
+        position: relative;
+        top: 0;
     }
     
     .score-value,
@@ -389,24 +398,32 @@ body.game-page {
     }
     
     .game-board-area {
-        margin-bottom: 10px;
-        margin-top: 5px;
+        margin-bottom: 0;
+        margin-top: 0;
         width: 100%;
         min-height: auto;
         height: auto;
         padding: 0; /* Remove padding */
+        align-items: flex-start !important; /* Force align to top */
     }
     
     /* Ensure canvas uses full width on mobile */
     #game-container canvas {
-        width: 99% !important; /* Force wider canvas - increased from 95% */
-        max-width: calc(100vw - 10px) !important; /* Only 5px padding on each side */
-        border-radius: 4px; /* Smaller border radius */
+        width: 100% !important; /* Force full width canvas */
+        max-width: 100vw !important; /* Use full viewport width */
+        border-radius: 0; /* Remove border radius */
+        margin-top: 0 !important; /* Remove top margin */
     }
     
     /* Target the dark container around the game board */
     .game-board-area > div {
-        padding: 5px !important; /* Reduce padding to 5px */
+        padding: 0 !important; /* Remove padding completely */
+    }
+    
+    /* Force the game wrapper to align to top */
+    .game-wrapper {
+        align-items: flex-start !important;
+        padding-top: 0 !important;
     }
     
     .game-button {
@@ -417,18 +434,26 @@ body.game-page {
 
 /* Minimum width support (375px as specified) */
 @media (max-width: 375px) {
+    /* Force body to align content to top */
+    body {
+        align-items: flex-start !important;
+        padding-top: 0 !important;
+    }
+    
     #game-container {
         max-width: 100%;
         max-height: 100vh;
         padding: 0; /* Remove padding completely */
+        margin-top: 0 !important; /* Remove top margin */
     }
     
     .ui-layer {
         height: 65px;
-        margin-bottom: 5px; /* Reduced margin */
-        top: 5px; /* Reduced top spacing */
-        left: 5px;
-        right: 5px;
+        margin-bottom: 2px; /* Further reduced margin */
+        top: 0; /* Align to top */
+        left: 2px;
+        right: 2px;
+        position: relative;
     }
     
     .score-value,
@@ -445,22 +470,31 @@ body.game-page {
     }
     
     .game-board-area {
-        margin-bottom: 5px;
-        margin-top: 2px;
+        margin-bottom: 0;
+        margin-top: 0;
         min-height: auto;
         height: auto;
         padding: 0; /* Remove padding */
+        align-items: flex-start !important; /* Force align to top */
     }
     
     /* Ensure canvas uses full width on smallest screens */
     #game-container canvas {
-        width: 99.5% !important; /* Force wider canvas */
-        max-width: calc(100vw - 6px) !important; /* Only 3px padding on each side */
+        width: 100% !important; /* Force full width canvas */
+        max-width: 100vw !important; /* Use full viewport width */
+        border-radius: 0; /* Remove border radius */
+        margin-top: 0 !important; /* Remove top margin */
     }
     
     /* Target the dark container around the game board */
     .game-board-area > div {
-        padding: 3px !important; /* Even smaller padding for smallest screens */
+        padding: 0 !important; /* Remove padding completely */
+    }
+    
+    /* Force the game wrapper to align to top */
+    .game-wrapper {
+        align-items: flex-start !important;
+        padding-top: 0 !important;
     }
 }
 

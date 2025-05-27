@@ -449,16 +449,29 @@ class GameScene extends Phaser.Scene {
         const canvasWidth = this.scale.width;
         const canvasHeight = this.scale.height;
         
+        // Check if we're on a mobile device
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        
         // Create a perfect square board that fits within the canvas
-        const margin = 20; // Margin around the board
+        // Use smaller margin on mobile devices
+        const margin = isMobile ? 5 : 20; // Reduced margin for mobile
         
         // Use the smaller dimension to ensure a perfect square
         const size = Math.min(canvasWidth, canvasHeight) - (margin * 2);
         const cornerRadius = 15; // Corner radius for rounded rectangle
         
-        // Calculate position to center the square in the canvas
+        // For mobile devices, position the board closer to the top
         const startX = (canvasWidth - size) / 2;
-        const startY = (canvasHeight - size) / 2;
+        let startY;
+        
+        if (isMobile) {
+            // Position board closer to top on mobile
+            startY = margin + 60; // Add space for the UI elements at top
+            console.log('📱 MOBILE BOARD POSITIONING: Positioning board closer to top');
+        } else {
+            // Center the board vertically on desktop
+            startY = (canvasHeight - size) / 2;
+        }
         
         // Store board dimensions for other systems to reference
         this.boardDimensions = {
