@@ -372,8 +372,10 @@ body.game-page {
     
     .game-board-area {
         margin-bottom: 15px;
+        margin-top: 5px;
         width: 100%;
-        height: calc(100vh - 120px);
+        min-height: auto;
+        height: auto;
     }
     
     .game-button {
@@ -413,7 +415,9 @@ body.game-page {
     
     .game-board-area {
         margin-bottom: 10px;
-        height: calc(100vh - 100px);
+        margin-top: 5px;
+        min-height: auto;
+        height: auto;
     }
 }
 
@@ -889,11 +893,12 @@ body.game-page {
 .game-board-area {
     flex: 1;
     display: flex;
-    align-items: center;
+    align-items: flex-start; /* Align to top instead of center */
     justify-content: center;
-    min-height: 520px; /* Increased to match new canvas height plus padding */
-    height: 520px; /* Increased to match new canvas height plus padding */
+    min-height: 450px; /* Reduced to bring game board closer to top */
+    height: auto; /* Let height be determined by content */
     margin-bottom: 20px;
+    margin-top: 10px; /* Add a small top margin */
     overflow: visible; /* Allow content to be visible */
 }
 
